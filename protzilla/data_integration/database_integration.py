@@ -81,7 +81,7 @@ def add_uniprot_data(dataframe, database_name=None, fields=None):
     return {"results_df": dataframe}
 
 
-def gene_mapping(dataframe, database_names, use_biomart=False):
+def gene_mapping(dataframe, database_names, use_biomart=False, database_dir=None):
     """
     Maps the protein ID groups to HGNC gene symbols, filtering out ones that are not
     found.
@@ -108,7 +108,7 @@ def gene_mapping(dataframe, database_names, use_biomart=False):
     if isinstance(database_names, str):
         database_names = [database_names]
     gene_to_groups, groups_to_genes, filtered = database_query.uniprot_groups_to_genes(
-        groups, database_names, use_biomart=use_biomart
+        groups, database_names, use_biomart=use_biomart, database_dir=database_dir
     )
     return {
         "gene_mapping": {

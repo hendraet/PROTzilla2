@@ -29,10 +29,11 @@ def get_memory_usage():
 
 
 def clean_uniprot_id(uniprot_id):
+    # TODO: Double check under which circumstances this is necessary _ and - are used
     if "-" in uniprot_id:
-        uniprot_id = uniprot_id.split("-")[0]
+        uniprot_id = uniprot_id.split("-")[1]
     if "_" in uniprot_id:
-        uniprot_id = uniprot_id.split("_")[0]
+        uniprot_id = uniprot_id.split("_")[1]
     return uniprot_id
 
 

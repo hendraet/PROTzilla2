@@ -70,15 +70,20 @@ def biomart_query(queries, filter_name, attributes, use_grch37=False):
         yield tabbed
 
 
-def uniprot_query_dataframe(filename, uniprot_ids, fields):
-    df = pandas.read_csv(EXTERNAL_DATA_PATH / "uniprot" / f"{filename}.tsv", sep="\t")
+def uniprot_query_dataframe(filename, uniprot_ids, fields, database_dir=None):
+    if database_dir is None:
+        database_dir = EXTERNAL_DATA_PATH / "uniprot"  # TODO: also adapt the hardcoded path here
+    df = pandas.read_csv(database_dir / f"{filename}.tsv", sep="\t")
     df.index = df["Entry"]
+    df.dropna(inplace=True)
     return df[df.Entry.isin(uniprot_ids)][fields]
 
 
-def uniprot_columns(filename):
+def uniprot_columns(filename, database_dir=None):
+    if database_dir is None:
+        database_dir = EXTERNAL_DATA_PATH / "uniprot"
     return pandas.read_csv(
-        EXTERNAL_DATA_PATH / "uniprot" / f"{filename}.tsv", sep="\t", nrows=0
+        database_dir / f"{filename}.tsv", sep="\t", nrows=0
     ).columns.tolist()
 
 
@@ -93,7 +98,7 @@ def uniprot_databases():
     return sorted(databases)
 
 
-def uniprot_to_genes(uniprot_ids, databases, use_biomart):
+def uniprot_to_genes(uniprot_ids, databases, use_biomart, database_dir=None):
     """
     Maps uniprot IDs to hgnc gene symbols. Also returns IDs that could not be mapped.
     First uses all uniprot databases that contain genes, then uses biomart to map
@@ -126,7 +131,7 @@ def uniprot_to_genes(uniprot_ids, databases, use_biomart):
     ids_to_search = set(uniprot_ids)
     for db_name in databases:
         # all available databases that have a gene column are used
-        cols = uniprot_columns(db_name)
+        cols = uniprot_columns(db_name, database_dir)
         if "Gene Names (primary)" in cols:
             df = uniprot_query_dataframe(
                 db_name, ids_to_search, ["Gene Names (primary)"]
@@ -135,9 +140,9 @@ def uniprot_to_genes(uniprot_ids, databases, use_biomart):
             out_dict, found_proteins = merge_dict(out_dict, mapping)
             ids_to_search -= found_proteins
         elif "Gene Names" in cols:
-            df = uniprot_query_dataframe(db_name, ids_to_search, ["Gene Names"])
+            df = uniprot_query_dataframe(db_name, ids_to_search, ["Gene Names"], database_dir=database_dir)
             mapping = df.to_dict()["Gene Names"]
-            first_gene_dict = {k: v and v.split()[0] for k, v in mapping.items()}
+            first_gene_dict = {k: v and v.split()[0] for k, v in mapping.items()}  # TODO: check this splitting rule
             out_dict, found_proteins = merge_dict(out_dict, first_gene_dict)
             ids_to_search -= found_proteins
 
@@ -146,6 +151,7 @@ def uniprot_to_genes(uniprot_ids, databases, use_biomart):
                 "All proteins mapped using uniprot, no biomart mapping will be performed."  # noqa E501
             )
             return out_dict, []
+
     if not use_biomart:
         logger.info("Skipping biomart, done with mapping uniprot IDs to genes.")
         return out_dict, list(ids_to_search)
@@ -168,7 +174,7 @@ def uniprot_to_genes(uniprot_ids, databases, use_biomart):
     return out_dict, list(not_found)
 
 
-def uniprot_groups_to_genes(uniprot_groups, databases, use_biomart):
+def uniprot_groups_to_genes(uniprot_groups, databases, use_biomart, database_dir=None):
     """
     Maps uniprot ID groups to hgnc gene symbols. Also returns groups that could not be
     mapped. Merges the mappings per group and creates a reverse mapping, from genes to
@@ -191,13 +197,13 @@ def uniprot_groups_to_genes(uniprot_groups, databases, use_biomart):
     for group in uniprot_groups:
         for protein in group.split(";"):
             proteins.add(clean_uniprot_id(protein))
-    id_to_gene, not_found = uniprot_to_genes(list(proteins), databases, use_biomart)
+    id_to_gene, not_found = uniprot_to_genes(list(proteins), databases, use_biomart, database_dir=database_dir)
     group_to_genes = {}
     gene_to_groups = defaultdict(list)
     filtered = []
     for group in uniprot_groups:
-        clean = set(clean_uniprot_id(protein) for protein in group.split(";"))
-        results = list(filter(lambda r: bool(r), map(id_to_gene.get, clean)))
+        clean_prot_ids = set(clean_uniprot_id(protein) for protein in group.split(";"))
+        results = [id_to_gene[prot_id] for prot_id in clean_prot_ids if prot_id in id_to_gene]
         if not results:
             filtered.append(group)
         else:
