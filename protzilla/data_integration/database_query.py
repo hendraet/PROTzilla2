@@ -203,11 +203,11 @@ def uniprot_groups_to_genes(uniprot_groups, databases, use_biomart, database_dir
     filtered = []
     for group in uniprot_groups:
         clean_prot_ids = set(clean_uniprot_id(protein) for protein in group.split(";"))
-        results = [id_to_gene[prot_id] for prot_id in clean_prot_ids if prot_id in id_to_gene]
+        results = set(id_to_gene[prot_id] for prot_id in clean_prot_ids if prot_id in id_to_gene)
         if not results:
             filtered.append(group)
         else:
-            group_to_genes[group] = results
+            group_to_genes[group] = list(results)
             for result in results:
                 gene_to_groups[result].append(group)
     return dict(gene_to_groups), group_to_genes, filtered

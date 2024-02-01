@@ -448,7 +448,7 @@ def GO_analysis_with_Enrichr(
     background_path=None,
     background_number=None,
     background_biomart=None,
-    **kwargs,
+    **kwargs,  # TODO: not used?
 ):
     """
     A method that performs online over-representation analysis for a given set of proteins
