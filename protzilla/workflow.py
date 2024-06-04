@@ -1,5 +1,17 @@
 from itertools import zip_longest
 
+from protzilla.constants import paths
+
+
+def get_available_workflow_names() -> list[str]:
+    if not paths.WORKFLOWS_PATH.exists():
+        return []
+    return [
+        file.stem
+        for file in paths.WORKFLOWS_PATH.iterdir()
+        if not file.name.startswith(".") and not file.suffix == ".json"
+    ]
+
 
 def get_steps_of_workflow(
     workflow_config_dict,
@@ -16,6 +28,16 @@ def get_steps_of_workflow(
             }
         )
     return workflow_steps
+
+
+def get_steps_amount_of_workflow(
+    workflow_config_dict,
+) -> int:
+    amount = 0
+    for section, steps in workflow_config_dict["sections"].items():
+        amount += steps["steps"].__len__()
+
+    return amount
 
 
 def get_steps_of_workflow_meta(workflow_meta) -> list[dict[str, str | list[str]]]:
@@ -59,6 +81,43 @@ def get_workflow_default_param_value(
         else:
             return None
     return None
+
+
+def get_global_index_of_step(workflow_config, section: str, step_index_in_section: int):
+    """
+    Get the global index of a step in a workflow.
+
+    :param workflow_config: The workflow config
+    :param section: The section of the step
+    :param step_index_in_section: The index of the step in the section
+    """
+    index = 0
+    for s, steps in workflow_config["sections"].items():
+        if s == section:
+            return (
+                index + step_index_in_section
+                if step_index_in_section < steps["steps"].__len__()
+                else -1
+            )
+        index += steps["steps"].__len__()
+    return -1
+
+
+def is_last_step_in_section(workflow_config, section, step_index_in_section) -> bool:
+    amount_steps_in_section = workflow_config["sections"][section]["steps"].__len__()
+    return amount_steps_in_section <= step_index_in_section + 1
+
+
+def is_last_step(workflow_config, index) -> bool:
+    """
+    Checks if the step is the last step in the workflow.
+
+    :param workflow_config: The workflow config
+    :param section: The section of the step
+    :param index: The global index of the step
+    """
+
+    return get_steps_amount_of_workflow(workflow_config) <= index + 1
 
 
 def validate_workflow_parameters(workflow_config, workflow_meta):

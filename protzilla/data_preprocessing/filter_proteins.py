@@ -1,13 +1,10 @@
 import pandas as pd
 
 from protzilla.data_preprocessing.plots import create_bar_plot, create_pie_plot
-
 from ..utilities.transform_dfs import long_to_wide
 
 
-def by_samples_missing(
-    intensity_df: pd.DataFrame, percentage: float
-) -> tuple[pd.DataFrame, dict]:
+def by_samples_missing(protein_df: pd.DataFrame, percentage: float) -> dict:
     """
     This function filters proteins based on the amount of samples with nan values, if the percentage of nan values
     is below a threshold (percentage).
@@ -19,8 +16,8 @@ def by_samples_missing(
         and a list of Protein IDs that were kept
     """
 
-    filter_threshold: int = percentage * len(intensity_df.Sample.unique())
-    transformed_df = long_to_wide(intensity_df)
+    filter_threshold: int = percentage * len(protein_df.Sample.unique())
+    transformed_df = long_to_wide(protein_df)
 
     remaining_proteins_list = transformed_df.dropna(
         axis=1, thresh=filter_threshold
@@ -28,24 +25,20 @@ def by_samples_missing(
     filtered_proteins_list = (
         transformed_df.drop(remaining_proteins_list, axis=1).columns.unique().tolist()
     )
-    filtered_df = intensity_df[
-        (intensity_df["Protein ID"].isin(remaining_proteins_list))
-    ]
-    return (
-        filtered_df,
-        dict(
-            filtered_proteins=filtered_proteins_list,
-            remaining_proteins=remaining_proteins_list,
-        ),
+    filtered_df = protein_df[(protein_df["Protein ID"].isin(remaining_proteins_list))]
+    return dict(
+        protein_df=filtered_df,
+        filtered_proteins=filtered_proteins_list,
+        remaining_proteins=remaining_proteins_list,
     )
 
 
-def _build_pie_bar_plot(df, result_df, current_out, graph_type):
+def _build_pie_bar_plot(remaining_proteins, filtered_proteins, graph_type):
     if graph_type == "Pie chart":
         fig = create_pie_plot(
             values_of_sectors=[
-                len(current_out["remaining_proteins"]),
-                len(current_out["filtered_proteins"]),
+                len(remaining_proteins),
+                len(filtered_proteins),
             ],
             names_of_sectors=["Proteins kept", "Proteins filtered"],
             heading="Number of Filtered Proteins",
@@ -53,8 +46,8 @@ def _build_pie_bar_plot(df, result_df, current_out, graph_type):
     elif graph_type == "Bar chart":
         fig = create_bar_plot(
             values_of_sectors=[
-                len(current_out["remaining_proteins"]),
-                len(current_out["filtered_proteins"]),
+                len(remaining_proteins),
+                len(filtered_proteins),
             ],
             names_of_sectors=["Proteins kept", "Proteins filtered"],
             heading="Number of Filtered Proteins",
@@ -63,5 +56,9 @@ def _build_pie_bar_plot(df, result_df, current_out, graph_type):
     return [fig]
 
 
-def by_samples_missing_plot(df, result_df, current_out, graph_type):
-    return _build_pie_bar_plot(df, result_df, current_out, graph_type)
+def by_samples_missing_plot(method_inputs, method_outputs, graph_type):
+    return _build_pie_bar_plot(
+        method_outputs["remaining_proteins"],
+        method_outputs["filtered_proteins"],
+        graph_type,
+    )

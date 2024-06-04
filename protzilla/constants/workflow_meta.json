@@ -111,7 +111,6 @@
             "type": "boolean",
             "default": false
           }
-
         }
       },
       "metadata_column_assignment": {
@@ -137,7 +136,6 @@
             "categories": [],
             "default": null
           }
-
         }
       }
     },
@@ -175,6 +173,7 @@
             "name": "Percentage of minimum non-missing samples per protein",
             "type": "numeric",
             "min": 0,
+            "step": 0.1,
             "max": 1,
             "default": 0.5
           }
@@ -434,6 +433,7 @@
             "name": "Percentile for normalisation:",
             "type": "numeric",
             "min": 0,
+            "step": 0.1,
             "max": 1,
             "default": 0.5
           }
@@ -539,7 +539,7 @@
                 "linear",
                 "log10"
               ],
-              "default": "linear"
+              "default": "log10"
             }
           },
           {
@@ -802,7 +802,7 @@
             "max": 10,
             "default": -1
           },
-           "scaling_factor": {
+          "scaling_factor": {
             "name": "Scaling factor:",
             "type": "numeric",
             "min": 0,
@@ -885,7 +885,8 @@
           }
         ]
       }
-    }
+    },
+    "output_name": "preprocessed_data"
   },
   "data_analysis": {
     "differential_expression": {
@@ -917,6 +918,16 @@
             "max": 1,
             "default": 0.05
           },
+          "log_base": {
+            "name": "Base of log transformation",
+            "type": "categorical",
+            "categories": [
+              "None",
+              "log2",
+              "log10"
+            ],
+            "default": "log2"
+          },
           "grouping": {
             "name": "Grouping:",
             "type": "categorical",
@@ -928,13 +939,13 @@
             "default": "None"
           },
           "selected_groups": {
-            "name": "Selected Groups:",
+            "name": "Selected groups (add / remove while holding CTRL-Key):",
             "type": "categorical",
             "fill": "metadata_column_data",
             "categories": [],
             "default": "None",
             "multiple": true,
-            "default_select_all": false
+            "default_select_all": true
           },
           "metadata_df": {
             "type": "empty",
@@ -945,8 +956,17 @@
       },
       "t_test": {
         "name": "t-Test",
-        "description": "A function to conduct a two sample t-test between groups defined in the clinical data. The t-test is conducted on the level of each protein. The p-values are corrected for multiple testing.",
+        "description": "A function to conduct a two sample t-test between groups defined in the clinical data. The t-test is conducted on the level of each protein. The p-values are corrected for multiple testing. The fold change is calculated by group2/group1.",
         "parameters": {
+          "ttest_type": {
+            "name": "t-Test type:",
+            "type": "categorical",
+            "categories": [
+              "Student's t-Test",
+              "Welch's t-Test"
+            ],
+            "default": "Welch's t-Test"
+          },
           "intensity_df": {
             "name": "Input dataframe",
             "type": "named_output",
@@ -968,20 +988,19 @@
             "name": "Error rate (alpha)",
             "type": "numeric",
             "min": 0,
+            "step": 0.05,
             "max": 1,
             "default": 0.05
           },
-          "fc_threshold": {
-            "name": "Fold change threshold",
-            "type": "numeric",
-            "min": 0,
-            "default": 0
-          },
           "log_base": {
-            "name": "base of log transformation",
-            "type": "numeric",
-            "min": 2,
-            "default": null
+            "name": "Base of log transformation",
+            "type": "categorical",
+            "categories": [
+              "None",
+              "log2",
+              "log10"
+            ],
+            "default": "log2"
           },
           "grouping": {
             "name": "Grouping",
@@ -1040,14 +1059,19 @@
             "name": "Error rate (alpha)",
             "type": "numeric",
             "min": 0,
+            "step": 0.05,
             "max": 1,
             "default": 0.05
           },
-          "fc_threshold": {
-            "name": "Fold change threshold",
-            "type": "numeric",
-            "min": 0,
-            "default": 0
+          "log_base": {
+            "name": "Base of log transformation",
+            "type": "categorical",
+            "categories": [
+              "None",
+              "log2",
+              "log10"
+            ],
+            "default": "log2"
           },
           "grouping": {
             "name": "Grouping",
@@ -1087,41 +1111,29 @@
         "name": "Volcano plot",
         "description": "",
         "parameters": {
-          "p_values": {
-            "name": "p-value df",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "log2_fc": {
-            "name": "log2 fold change df",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
+          "input_dict": {
+            "name": "Input data dict (generated by t-Test or Linear Model Diff Exp)",
+            "type": "multi_named_output",
+            "mapping": {
+              "p_values": "corrected_p_values_df",
+              "log2_fc": "log2_fold_change_df",
+              "alpha": "corrected_alpha",
+              "group1": "group1",
+              "group2": "group2"
+            }
           },
           "fc_threshold": {
             "name": "log2 fold change threshold",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "alpha": {
-            "name": "alpha/corrected alpha",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
+            "type": "numeric",
+            "min": 0,
+            "default": 0
           },
           "proteins_of_interest_input": {
-            "name": "Proteins of interest",
-            "type": "named_output",
+            "name": "proteins of interest df to highlight in plot",
+            "select_from": [
+              "input_dict"
+            ],
+            "type": "named_output_v2",
             "default": [
               null,
               null
@@ -1139,15 +1151,9 @@
           }
         }
       },
-      "heatmap": {
-        "name": "Heatmap",
-        "description": "",
-        "parameters": {
-        }
-      },
       "scatter_plot": {
         "name": "Scatter plot",
-        "description": "Creates a scatter plot from data",
+        "description": "Creates a scatter plot from data. This requires a dimension reduction method to be run first, as the input dataframe should contain only 2 or 3 columns.",
         "parameters": {
           "input_df": {
             "name": "Choose dataframe to be plotted",
@@ -1201,67 +1207,59 @@
         }
       },
       "prot_quant": {
-          "name": "Prot Quant",
-          "description": "Creates a line chart for intensity across samples for proteingroups",
-          "parameters": {
-            "input_df": {
-              "name": "Input dataframe: choose dataframe to be plotted",
-              "type": "named_output",
-              "default": [
-                null,
-                null
-              ]
-            },
-            "protein_group": {
-              "name": "Protein group: choose highlighted protein group",
-              "type": "categorical",
-              "fill": "protein_group_column",
-              "categories": [],
-              "default": null
-            },
-            "similarity_measure": {
-              "name": "Similarity Measurement: choose how to compare protein groups",
-              "type": "categorical",
-              "categories": ["euclidean distance", "cosine similarity"],
-              "default": "euclidean_distance"
-            },
-            "similarity": {
-              "name": "Similarity",
-              "type": "numeric",
-              "min": -1,
-              "max": 999,
-              "default": 1
-            }
+        "name": "Prot Quant",
+        "description": "Creates a line chart for intensity across samples for proteingroups",
+        "parameters": {
+          "input_df": {
+            "name": "Input dataframe: choose dataframe to be plotted",
+            "type": "named_output",
+            "default": [
+              null,
+              null
+            ],
+            "fill_dynamic": [
+              "protein_group"
+            ]
+          },
+          "protein_group": {
+            "name": "Protein group: choose highlighted protein group",
+            "type": "categorical",
+            "fill": "protein_ids",
+            "categories": [],
+            "default": null
+          },
+          "similarity_measure": {
+            "name": "Similarity Measurement: choose how to compare protein groups",
+            "type": "categorical",
+            "categories": [
+              "euclidean distance",
+              "cosine similarity"
+            ],
+            "default": "euclidean_distance"
+          },
+          "similarity": {
+            "name": "Similarity",
+            "type": "numeric",
+            "min": -1,
+            "max": 999,
+            "step": 0.1,
+            "default": 1
           }
+        }
       },
       "precision_recall_curve": {
         "name": "Precision recall curve",
         "description": "The precision-recall curve shows the tradeoff between precision and recall for different threshold",
         "parameters": {
-          "model": {
-            "name": "Choose trained model",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "input_test_df": {
-            "name": "Choose test data",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "labels_test_df": {
-            "name": "Choose labels for test data",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
+            "input_dict": {
+                "name": "Input classification model (generated by Random forest or Support Vector Machine(SVM))",
+                "type": "multi_named_output",
+                "mapping": {
+                  "model": "model",
+                  "input_test_df": "X_test_df",
+                  "labels_test_df": "y_test_df"
+                }
+            },
           "plot_title": {
             "name": "Title of the plot (optional)",
             "type": "text"
@@ -1272,29 +1270,14 @@
         "name": "ROC curve",
         "description": "The ROC curve helps assess the model's ability to discriminate between positive and negative classes and determine an optimal threshold for decision making",
         "parameters": {
-          "model": {
-            "name": "Choose trained model",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "input_test_df": {
-            "name": "Choose test data",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "labels_test_df": {
-            "name": "Choose labels for test data",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
+          "input_dict": {
+            "name": "Input classification model (generated by Random forest or Support Vector Machine(SVM))",
+            "type": "multi_named_output",
+            "mapping": {
+              "model": "model",
+              "input_test_df": "X_test_df",
+              "labels_test_df": "y_test_df"
+            }
           },
           "plot_title": {
             "name": "Title of the plot (optional)",
@@ -2115,29 +2098,14 @@
         "name": "Evaluation of classification models",
         "description": "Assessing an already trained classification model on separate testing data using widely used scoring metrics",
         "parameters": {
-          "model": {
-            "name": "Choose trained model",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "input_test_df": {
-            "name": "Choose testing data",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
-          },
-          "labels_test_df": {
-            "name": "Choose labels for input data",
-            "type": "named_output",
-            "default": [
-              null,
-              null
-            ]
+          "input_dict": {
+            "name": "Input classification model (generated by Random forest or Support Vector Machine(SVM))",
+            "type": "multi_named_output",
+            "mapping": {
+              "model": "model",
+              "input_test_df": "X_test_df",
+              "labels_test_df": "y_test_df"
+            }
           },
           "scoring": {
             "name": "Choose metric to measure the model's performance",
@@ -2248,6 +2216,7 @@
             "name": "The effective minimum distance between embedded points.",
             "type": "numeric",
             "min": 0.1,
+            "step": 0.1,
             "default": 0.1
           },
           "metric": {
@@ -2275,13 +2244,13 @@
     "protein_graphs": {
       "peptides_to_isoform": {
         "name": "Peptide to isoform",
-        "description": "Create a variation graph (.graphml) for a Protein and map the peptides onto the graph for coverage visualisation. The protein data will be downloaded from https://rest.uniprot.org/uniprotkb/<Protein ID>.txt. Only `Variant`-Features are included in the graph. This, currently, only works with Uniport-IDs and while you are online.",
+        "description": "Create a variation graph (.graphml) for a protein and map the peptides onto the graph for coverage visualisation. The protein data will be downloaded from https://rest.uniprot.org/uniprotkb/<Protein ID>.txt. Only `Variant`-features are included in the graph. This, currently, only works with Uniprot-IDs and while you are online.",
         "parameters": {
           "protein_id": {
             "name": "Protein ID",
             "type": "text",
             "default": "",
-            "placeholder": "Enter the Uniprot-ID of the Protein"
+            "placeholder": "Enter the Uniprot-ID of the protein"
           },
           "run_name": {
             "type": "empty",
@@ -2306,18 +2275,45 @@
             "min": 0,
             "step": 1,
             "default": 2
+          },
+          "metadata_df": {
+            "type": "empty",
+            "name": "metadata_df",
+            "condition": "metadata",
+            "default": null
+          },
+          "grouping": {
+            "name": "Category by which peptides should be selected.",
+            "type": "categorical",
+            "condition": "metadata",
+            "fill": "metadata_columns",
+            "fill_dynamic": [
+              "selected_groups"
+            ],
+            "categories": [],
+            "default": "None"
+          },
+          "selected_groups": {
+            "name": "Select group(s) from which peptides should be selected for mapping to the protein graph.",
+            "type": "categorical",
+            "condition": "metadata",
+            "fill": "metadata_column_data",
+            "categories": [],
+            "default": "None",
+            "multiple": true,
+            "default_select_all": false
           }
         }
       },
       "variation_graph": {
         "name": "Protein variation graph",
-        "description": "Create a variation graph (.graphml) for a protein, including variation-features. The protein data will be downloaded from https://rest.uniprot.org/uniprotkb/<Protein ID>.txt. This, currently, only works with Uniport-IDs and while you are online.",
+        "description": "Create a variation graph (.graphml) for a protein, including variation-features. The protein data will be downloaded from https://rest.uniprot.org/uniprotkb/<Protein ID>.txt. This, currently, only works with Uniprot-IDs and while you are online.",
         "parameters": {
           "protein_id": {
             "name": "Protein ID",
             "type": "text",
             "default": "",
-            "placeholder": "Enter the Uniprot-ID of the Protein"
+            "placeholder": "Enter the Uniprot-ID of the protein"
           },
           "run_name": {
             "type": "empty",
@@ -2938,6 +2934,7 @@
             "name": "Only terms with adjusted p-value (or FDR) < cutoff will be shown",
             "type": "numeric",
             "min": 0,
+            "step": 0.01,
             "max": 1,
             "default": 0.05
           },
@@ -2996,6 +2993,7 @@
             "name": "Only terms with adjusted p-value < cutoff will be shown",
             "type": "numeric",
             "min": 0,
+            "step": 0.01,
             "max": 1,
             "default": 0.05
           },
@@ -3063,6 +3061,7 @@
             "name": "Cutoff value for fdr q-value or nominal p-value",
             "type": "numeric",
             "min": 0,
+            "step": 0.01,
             "max": 1,
             "default": 0.05
           },

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from django.contrib import messages
 from scipy import stats
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 
@@ -13,24 +12,30 @@ from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE
 from protzilla.utilities.clustergram import Clustergram
 from protzilla.utilities.transform_dfs import is_long_format, long_to_wide
 
+colors = {
+    "plot_bgcolor": "white",
+    "gridcolor": "#F1F1F1",
+    "linecolor": "#F1F1F1",
+    "annotation_text_color": "#ffffff",
+    "annotation_proteins_of_interest": "#4A536A",
+}
+
 
 def scatter_plot(
     input_df: pd.DataFrame,
     color_df: pd.DataFrame | None = None,
-):
+) -> dict:
     """
     Function to create a scatter plot from data.
 
     :param input_df: the dataframe that should be plotted. It should have either 2
         or 3 dimensions
-    :type input_df: pd.Dataframe
     :param color_df: the Dataframe with one column according to which the marks should
         be colored. This is an optional parameter
-    :type color_df: pd.Dataframe
 
-    :return: returns a list with a plotly figure or a list with a dictionary if an error occurs
-    :rtype: list[plotly figure]/dict
+    :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
+
     intensity_df_wide = long_to_wide(input_df) if is_long_format(input_df) else input_df
     try:
         color_df = (
@@ -45,6 +50,9 @@ def scatter_plot(
             x_name, y_name = intensity_df_wide.columns[:2]
             color_name = color_df.columns[0] if not color_df.empty else None
             fig = px.scatter(intensity_df_wide, x=x_name, y=y_name, color=color_name)
+            fig.update_traces(
+                marker=dict(color=colors["annotation_proteins_of_interest"])
+            )
         elif intensity_df_wide.shape[1] == 3:
             intensity_df_wide = pd.concat([intensity_df_wide, color_df], axis=1)
             x_name, y_name, z_name = intensity_df_wide.columns[:3]
@@ -52,12 +60,15 @@ def scatter_plot(
             fig = px.scatter_3d(
                 intensity_df_wide, x=x_name, y=y_name, z=z_name, color=color_name
             )
+            fig.update_traces(marker_color=colors["annotation_proteins_of_interest"])
         else:
             raise ValueError(
                 "The dimensions of the DataFrame are either too high or too low."
             )
-
-        return [fig]
+        fig.update_layout(plot_bgcolor=colors["plot_bgcolor"])
+        fig.update_xaxes(gridcolor=colors["gridcolor"], linecolor=colors["linecolor"])
+        fig.update_yaxes(gridcolor=colors["gridcolor"], linecolor=colors["linecolor"])
+        return dict(plots=[fig])
     except ValueError as e:
         msg = ""
         if intensity_df_wide.shape[1] < 2:
@@ -72,29 +83,31 @@ def scatter_plot(
             )
         elif color_df.shape[1] != 1:
             msg = "The color dataframe should have 1 dimension only"
-        return [dict(messages=[dict(level=logging.ERROR, msg=msg, trace=str(e))])]
+        return dict(messages=[dict(level=logging.ERROR, msg=msg, trace=str(e))])
 
 
 def create_volcano_plot(
-    p_values, log2_fc, fc_threshold, alpha, proteins_of_interest=None
-):
+    p_values: pd.DataFrame,
+    log2_fc: pd.DataFrame,
+    fc_threshold: float,
+    alpha: float,
+    group1: str,
+    group2: str,
+    proteins_of_interest: list | None = None,
+) -> dict:
     """
     Function to create a volcano plot from p values and log2 fold change with the
     possibility to annotate proteins of interest.
 
     :param p_values:dataframe with p values
-    :type p_values: pd.Dataframe
     :param log2_fc: dataframe with log2 fold change
-    :type log2_fc: pd.Dataframe
     :param fc_threshold: the threshold for the fold change to show
-    :type fc_threshold: float
     :param alpha: the alpha value for the significance line
-    :type alpha: float
+    :param group1: the name of the first group
+    :param group2: the name of the second group
     :param proteins_of_interest: the proteins that should be annotated in the plot
-    :type proteins_of_interest: list or None
 
-    :return: returns a list with a plotly figure
-    :rtype: [plotly figure]
+    :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
 
     plot_df = p_values.join(log2_fc.set_index("Protein ID"), on="Protein ID")
@@ -106,12 +119,14 @@ def create_volcano_plot(
         gene=None,
         genomewideline_value=-np.log10(alpha),
         effect_size_line=[-fc_threshold, fc_threshold],
-        xlabel="log2(fc)",
+        xlabel=f"log2(fc) ({group2} / {group1})",
         ylabel="-log10(p)",
         title="Volcano Plot",
         annotation="Protein ID",
+        plot_bgcolor=colors["plot_bgcolor"],
+        xaxis_gridcolor=colors["gridcolor"],
+        yaxis_gridcolor=colors["gridcolor"],
     )
-
     if proteins_of_interest is None:
         proteins_of_interest = []
     elif not isinstance(proteins_of_interest, list):
@@ -133,10 +148,10 @@ def create_volcano_plot(
             text=protein,
             showarrow=True,
             arrowhead=1,
-            font=dict(color="#ffffff"),
+            font=dict(color=colors["annotation_text_color"]),
             align="center",
-            arrowcolor="#4A536A",
-            bgcolor="#4A536A",
+            arrowcolor=colors["annotation_proteins_of_interest"],
+            bgcolor=colors["annotation_proteins_of_interest"],
             opacity=0.8,
             ax=0,
             ay=-20,
@@ -153,13 +168,21 @@ def create_volcano_plot(
             legendgroup=new_names[t.name],
         )
     )
+    fig.update_traces(
+        marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2]),
+        selector=dict(name="Significant Proteins"),
+    )
+    fig.update_traces(
+        marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[0]),
+        selector=dict(name="Not Significant Proteins"),
+    )
 
-    return [fig]
+    return dict(plots=[fig])
 
 
 def clustergram_plot(
     input_df: pd.DataFrame, sample_group_df: pd.DataFrame | None, flip_axes: str
-):
+) -> dict:
     """
     Creates a clustergram plot from a dataframe in protzilla wide format. The rows or
     columns of the clustergram are ordered according to the clustering resulting from
@@ -168,18 +191,15 @@ def clustergram_plot(
 
     :param input_df: A dataframe in protzilla wide format, where each row
         represents a sample and each column represents a feature.
-    :type input_df: pd.DataFrame
     :param sample_group_df: A dataframe with a column that specifies the group of each
         sample in `input_df`. Each group will be assigned a color, which will be shown
         in the final plot as a colorbar next to the heatmap. This is an optional
         parameter
-    :type sample_group_df: pd.DataFrame
     :param flip_axes: If "yes", the rows and columns of the clustergram will be
         swapped. If "no", the default orientation is used.
-    :type flip_axes: str
 
-    :return: returns a list with a plotly figure or a list with a dictionary if an error occurs
-    :rtype: list[plotly figure]/dict
+
+    return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
     try:
         assert isinstance(input_df, pd.DataFrame) and not input_df.empty
@@ -236,7 +256,7 @@ def clustergram_plot(
         clustergram.update_layout(
             autosize=True,
         )
-        return [clustergram]
+        return dict(plots=[clustergram])
     except AssertionError as e:
         if not isinstance(input_df, pd.DataFrame):
             msg = (
@@ -261,7 +281,7 @@ def clustergram_plot(
             msg = "The input dataframe and the grouping contain different samples"
         else:
             msg = f"An unknown error occurred: {e}"
-        return [dict(messages=[dict(level=logging.ERROR, msg=msg)])]
+        return dict(messages=[dict(level=logging.ERROR, msg=msg)])
 
 
 def prot_quant_plot(
@@ -269,7 +289,7 @@ def prot_quant_plot(
     protein_group: str,
     similarity: float = 1.0,
     similarity_measure: str = "euclidean distance",
-):
+) -> dict:
     """
     A function to create a graph visualising protein quantifications across all samples
     as a line diagram. It's possible to select one proteingroup that will be displayed in orange
@@ -283,24 +303,23 @@ def prot_quant_plot(
     :param similarity_measure: method to compare the chosen proteingroup with all others. The two
         methods are "cosine similarity" and "euclidean distance".
     :param similarity: similarity score of the chosen similarity measurement method.
+
+
+    :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
+
     wide_df = long_to_wide(input_df) if is_long_format(input_df) else input_df
 
-    try:
-        if protein_group not in wide_df.columns:
-            raise ValueError("Please select a valid protein group.")
-        elif similarity_measure == "euclidean distance" and similarity < 0:
-            raise ValueError(
-                "Similarity for euclidean distance should be greater than or equal to 0."
-            )
-        elif similarity_measure == "cosine similarity" and (
-            similarity < -1 or similarity > 1
-        ):
-            raise ValueError(
-                "Similarity for cosine similarity should be between -1 and 1."
-            )
-    except ValueError as error:
-        return [dict(messages=[dict(level=messages.ERROR, msg=str(error))])]
+    if protein_group not in wide_df.columns:
+        raise ValueError("Please select a valid protein group.")
+    elif similarity_measure == "euclidean distance" and similarity < 0:
+        raise ValueError(
+            "Similarity for euclidean distance should be greater than or equal to 0."
+        )
+    elif similarity_measure == "cosine similarity" and (
+        similarity < -1 or similarity > 1
+    ):
+        raise ValueError("Similarity for cosine similarity should be between -1 and 1")
 
     fig = go.Figure()
 
@@ -360,7 +379,7 @@ def prot_quant_plot(
                 y=wide_df[group],
                 mode="lines",
                 name=group[:15] + "..." if len(group) > 15 else group,
-                line=dict(color="rgba(102,51,153,0.5)"),
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[1]),
                 showlegend=len(similar_groups) <= 7,
             )
         )
@@ -371,7 +390,7 @@ def prot_quant_plot(
                 x=[None],
                 y=[None],
                 mode="lines",
-                marker=dict(color="rgba(102,51,153,0.5)"),
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[1]),
                 name="Similar Protein Groups",
             )
         )
@@ -385,7 +404,7 @@ def prot_quant_plot(
             y=wide_df[protein_group],
             mode="lines",
             name=formatted_protein_name,
-            line=dict(color="orangered"),
+            line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2]),
         )
     )
 
@@ -411,6 +430,11 @@ def prot_quant_plot(
 
     fig.update_layout(
         title=f"Intensity of {formatted_protein_name} in all samples",
+        plot_bgcolor=colors["plot_bgcolor"],
+        xaxis_gridcolor=colors["gridcolor"],
+        yaxis_gridcolor=colors["gridcolor"],
+        xaxis_linecolor=colors["linecolor"],
+        yaxis_linecolor=colors["linecolor"],
         xaxis_title="Sample",
         yaxis_title="Intensity",
         legend_title="Legend",
@@ -433,4 +457,4 @@ def prot_quant_plot(
         ),
     )
 
-    return [fig]
+    return dict(plots=[fig])

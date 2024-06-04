@@ -10,20 +10,19 @@ from protzilla.data_preprocessing.plots import (
     create_pca_2d_scatter_plot,
     create_pca_3d_scatter_plot,
 )
-
 from ..utilities.transform_dfs import long_to_wide
 
 
 def by_isolation_forest(
-    intensity_df: pd.DataFrame, n_estimators: int = 100, n_jobs: int = -1
-) -> tuple[pd.DataFrame, dict]:
+    protein_df: pd.DataFrame, n_estimators: int = 100, n_jobs: int = -1
+) -> dict:
     """
     This function filters out outliers using a clustering
     isolation forest approach.
 
-    :param intensity_df: a dataframe in typical protzilla long format
+    :param protein_df: a dataframe in typical protzilla long format
         on which the outlier detection is performed
-    :type intensity_df: pandas DataFrame
+    :type protein_df: pandas DataFrame
     :param n_estimators: the number of estimators used by the algorithm,
         default: 100
     :type n_estimators: integer
@@ -36,7 +35,7 @@ def by_isolation_forest(
     :rtype: Tuple[pandas DataFrame, dict]
     """
     try:
-        transformed_df = long_to_wide(intensity_df)
+        transformed_df = long_to_wide(protein_df)
 
         clf = IsolationForest(
             random_state=0,
@@ -59,16 +58,18 @@ def by_isolation_forest(
             df_isolation_forest_data["Outlier"]
         ].index.tolist()
 
-        intensity_df = intensity_df[~(intensity_df["Sample"].isin(outlier_list))]
+        protein_df = protein_df[~(protein_df["Sample"].isin(outlier_list))]
 
-        return intensity_df, dict(
+        return dict(
+            protein_df=protein_df,
             outlier_list=outlier_list,
             anomaly_df=df_isolation_forest_data[["Anomaly Score", "Outlier"]],
         )
     except ValueError as e:
         msg = "Outlier Detection by IsolationForest does not accept missing values \
             encoded as NaN. Consider preprocessing your data to remove NaN values."
-        return intensity_df, dict(
+        return dict(
+            protein_df=protein_df,
             outlier_list=None,
             anomaly_df=None,
             messages=[dict(level=logging.ERROR, msg=msg, trace=str(e))],
@@ -76,19 +77,19 @@ def by_isolation_forest(
 
 
 def by_local_outlier_factor(
-    intensity_df: pd.DataFrame,
+    protein_df: pd.DataFrame,
     number_of_neighbors: int = 20,
     n_jobs: int = -1,
-) -> tuple[pd.DataFrame, dict]:
+) -> dict:
     """
     This function filters out outliers using a clustering
     Local Outlier Factor approach based on k nearest
     neighbors clustering.
     https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.LocalOutlierFactor.html
 
-    :param intensity_df: a dataframe in typical protzilla long format
+    :param protein_df: a dataframe in typical protzilla long format
         on which the outlier detection is performed
-    :type intensity_df: pandas DataFrame
+    :type protein_df: pandas DataFrame
     :param number_of_neighbors: number of neighbors used by the
         algorithm, default: 20
     :type number_of_neighbors: int
@@ -101,7 +102,7 @@ def by_local_outlier_factor(
     :rtype: Tuple[pandas DataFrame, dict]
     """
     try:
-        transformed_df = long_to_wide(intensity_df)
+        transformed_df = long_to_wide(protein_df)
 
         clf = LocalOutlierFactor(n_neighbors=number_of_neighbors, n_jobs=n_jobs)
 
@@ -115,15 +116,17 @@ def by_local_outlier_factor(
 
         outlier_list = df_lof_data[df_lof_data["Outlier"]].index.tolist()
 
-        intensity_df = intensity_df[~(intensity_df["Sample"].isin(outlier_list))]
-        return intensity_df, dict(
+        protein_df = protein_df[~(protein_df["Sample"].isin(outlier_list))]
+        return dict(
+            protein_df=protein_df,
             outlier_list=outlier_list,
             anomaly_df=df_lof_data[["Anomaly Score", "Outlier"]],
         )
     except ValueError as e:
         msg = f"Outlier Detection by LocalOutlierFactor does not accept missing values \
             encoded as NaN. Consider preprocessing your data to remove NaN values."
-        return intensity_df, dict(
+        return dict(
+            protein_df=protein_df,
             outlier_list=None,
             anomaly_df=None,
             messages=[dict(level=logging.ERROR, msg=msg, trace=str(e))],
@@ -131,10 +134,10 @@ def by_local_outlier_factor(
 
 
 def by_pca(
-    intensity_df: pd.DataFrame,
+    protein_df: pd.DataFrame,
     threshold: int = 2,
     number_of_components: int = 3,
-) -> tuple[pd.DataFrame, dict]:
+) -> dict:
     """
     This function filters out outliers using a PCA
     based approach based geometrical distance to the median
@@ -143,9 +146,9 @@ def by_pca(
     analysis. Based on
     https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
 
-    :param intensity_df: a dataframe in typical protzilla long format
+    :param protein_df: a dataframe in typical protzilla long format
         on which the outlier detection is performed
-    :type intensity_df: pandas DataFrame
+    :type protein_df: pandas DataFrame
     :param threshold: distance from the median in
         number of standard deviations to be included,
         default: 2
@@ -168,7 +171,7 @@ def by_pca(
         }, f"Wrong number of components. \
             Should be 2 or 3, but is {number_of_components}."
 
-        transformed_df = long_to_wide(intensity_df)
+        transformed_df = long_to_wide(protein_df)
         pca_model = PCA(n_components=number_of_components)
         pca_model.fit(transformed_df)
 
@@ -214,9 +217,10 @@ def by_pca(
         outlier_list = df_transformed_pca_data[
             df_transformed_pca_data["Outlier"]
         ].index.tolist()
-        intensity_df = intensity_df[~(intensity_df["Sample"].isin(outlier_list))]
+        protein_df = protein_df[~(protein_df["Sample"].isin(outlier_list))]
 
-        return intensity_df, dict(
+        return dict(
+            protein_df=protein_df,
             outlier_list=outlier_list,
             pca_df=df_transformed_pca_data,
             explained_variance_ratio=list(pca_model.explained_variance_ratio_),
@@ -225,25 +229,26 @@ def by_pca(
     except ValueError as e:
         msg = "Outlier Detection by PCA does not accept missing values \
         encoded as NaN. Consider preprocessing your data to remove NaN values."
-        return intensity_df, dict(
+        return dict(
+            protein_df=protein_df,
             outlier_list=None,
             anomaly_df=None,
             messages=[dict(level=logging.ERROR, msg=msg, trace=str(e))],
         )
 
 
-def by_isolation_forest_plot(df, result_df, current_out):
-    return [create_anomaly_score_bar_plot(current_out["anomaly_df"])]
+def by_isolation_forest_plot(method_inputs, method_outputs):
+    return [create_anomaly_score_bar_plot(method_outputs["anomaly_df"])]
 
 
-def by_local_outlier_factor_plot(df, result_df, current_out):
-    return [create_anomaly_score_bar_plot(current_out["anomaly_df"])]
+def by_local_outlier_factor_plot(method_inputs, method_outputs):
+    return [create_anomaly_score_bar_plot(method_outputs["anomaly_df"])]
 
 
-def by_pca_plot(df, result_df, current_out):
-    pca_df = current_out["pca_df"]
-    number_of_components = current_out["number_of_components"]
-    explained_variance_ratio = current_out["explained_variance_ratio"]
+def by_pca_plot(method_inputs, method_outputs):
+    pca_df = method_outputs["pca_df"]
+    number_of_components = method_outputs["number_of_components"]
+    explained_variance_ratio = method_outputs["explained_variance_ratio"]
     if number_of_components == 2:
         return [create_pca_2d_scatter_plot(pca_df, explained_variance_ratio)]
     if number_of_components == 3:

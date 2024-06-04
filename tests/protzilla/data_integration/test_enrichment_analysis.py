@@ -280,6 +280,29 @@ def test_GO_analysis_with_STRING_no_downregulated_proteins():
     assert "No downregulated proteins" in current_out["messages"][0]["msg"]
 
 
+def test_GO_analysis_with_STRING_no_knowledge_base():
+    proteins_df = pd.DataFrame(
+        {
+            "Protein ID": ["Protein1", "Protein2", "Protein3"],
+            "log2_fold_change": [1.0, 0.5, 0.0],
+        }
+    )
+
+    current_out = GO_analysis_with_STRING(
+        proteins_df=proteins_df,
+        gene_sets_restring=None,
+        organism=9606,
+        differential_expression_col="log2_fold_change",
+        direction="both",
+    )
+
+    assert "messages" in current_out
+    assert any(
+        "No knowledge databases" in message["msg"]
+        for message in current_out["messages"]
+    )
+
+
 def test_GO_analysis_with_STRING_no_proteins():
     proteins_df = pd.DataFrame(
         {
@@ -426,7 +449,7 @@ def test_GO_analysis_with_Enrichr(mock_gene_mapping, data_folder_tests):
     )
 
     gene_mapping = {
-        "gene_to_groups": {
+        "gene_to_protein_groups": {
             "ENO2": ["Protein2"],
             "ENO3": ["Protein3"],
             "HK2": ["Protein4"],
@@ -436,7 +459,7 @@ def test_GO_analysis_with_Enrichr(mock_gene_mapping, data_folder_tests):
             "GPT2": ["Protein9;Protein10;Protein11"],
             "SDHB": ["Protein9;Protein10;Protein11"],
         },
-        "group_to_genes": {
+        "protein_group_to_genes": {
             "Protein2": ["ENO2"],
             "Protein3": ["ENO3"],
             "Protein4": ["HK2"],
@@ -541,7 +564,7 @@ def GO_analysis_offline_result_with_bg():
 @pytest.fixture
 def offline_mock_mapping():
     return {
-        "gene_to_groups": {
+        "gene_to_protein_groups": {
             "Gene1": ["Protein1"],
             "Gene2": ["Protein2"],
             "Gene3": ["Protein3"],
@@ -549,7 +572,7 @@ def offline_mock_mapping():
             "Gene5": ["Protein5"],
             "Gene6": ["Protein6"],
         },
-        "group_to_genes": {
+        "protein_group_to_genes": {
             "Protein1": ["Gene1"],
             "Protein2": ["Gene2"],
             "Protein3": ["Gene3"],
@@ -910,7 +933,7 @@ def test_create_genes_intensity_wide_df(data_folder_tests):
         data=test_intensity_list,
         columns=["Sample", "Protein ID", "Gene", "Intensity"],
     )
-    group_to_genes = {
+    protein_group_to_genes = {
         "Protein1": ["Gene1", "Gene1-1"],  # multiple genes per group
         "Protein2": ["Gene2"],
         "Protein3": ["Gene3"],
@@ -921,8 +944,8 @@ def test_create_genes_intensity_wide_df(data_folder_tests):
         protein_df=protein_df,
         protein_groups=protein_df["Protein ID"].unique().tolist(),
         samples=protein_df["Sample"].unique().tolist(),
-        group_to_genes=group_to_genes,
-        filtered_groups=["Protein5"],  # not in group_to_genes
+        protein_group_to_genes=protein_group_to_genes,
+        filtered_groups=["Protein5"],  # not in protein_group_to_genes
     )
 
     expected_df = pd.DataFrame(
@@ -1086,8 +1109,8 @@ def test_gsea_no_gene_symbols(data_folder_tests):
     )
     metadata_df = pd.read_csv(data_folder_tests / "metadata_full.csv")
     mock_mapping = {
-        "gene_to_groups": {},
-        "group_to_genes": {},
+        "gene_to_protein_groups": {},
+        "protein_group_to_genes": {},
         "filtered": ["Protein1", "Protein2"],
     }
     current_out = gsea(
@@ -1154,8 +1177,8 @@ def test_gsea_catch_fail():
         columns=["Sample", "Group"],
     )
     mock_mapping = {
-        "gene_to_groups": {"Gene1": "Protein1", "Gene2": "Protein2"},
-        "group_to_genes": {"Protein1": ["Gene1"], "Protein2": ["Gene2"]},
+        "gene_to_protein_groups": {"Gene1": "Protein1", "Gene2": "Protein2"},
+        "protein_group_to_genes": {"Protein1": ["Gene1"], "Protein2": ["Gene2"]},
         "filtered": [],
     }
 
@@ -1187,7 +1210,7 @@ def test_create_ranked_df():
         data=test_p_value_list,
         columns=["Protein ID", "corrected_p_value"],
     )
-    group_to_genes = {
+    protein_group_to_genes = {
         "Protein1": ["Gene1"],
         "Protein2": ["Gene2"],
         "Protein3-1;Protein3-2;Protein4": ["Gene3", "Gene4"],  # multiple genes
@@ -1213,8 +1236,8 @@ def test_create_ranked_df():
         protein_df=proteins_df,
         ranking_column="corrected_p_value",
         ranking_direction="ascending",
-        group_to_genes=group_to_genes,
-        filtered_groups=["Protein7", "Protein8"],  # not in group_to_genes
+        protein_group_to_genes=protein_group_to_genes,
+        filtered_groups=["Protein7", "Protein8"],  # not in protein_group_to_genes
     )
     assert ranked_df.equals(expected_df)
 
@@ -1234,7 +1257,7 @@ def test_create_ranked_df_descending():
         data=test_log2fc_list,
         columns=["Protein ID", "log2fc"],
     )
-    group_to_genes = {
+    protein_group_to_genes = {
         "Protein1": ["Gene1"],
         "Protein2": ["Gene2"],
         "Protein3-1;Protein3-2;Protein4": ["Gene3", "Gene4"],  # multiple genes
@@ -1260,8 +1283,8 @@ def test_create_ranked_df_descending():
         protein_df=proteins_df,
         ranking_column="log2fc",
         ranking_direction="descending",
-        group_to_genes=group_to_genes,
-        filtered_groups=["Protein7", "Protein8"],  # not in group_to_genes
+        protein_group_to_genes=protein_group_to_genes,
+        filtered_groups=["Protein7", "Protein8"],  # not in protein_group_to_genes
     )
     assert ranked_df.equals(expected_df)
 
@@ -1367,8 +1390,8 @@ def test_gsea_preranked_no_gene_symbols():
         columns=["Protein ID", "corrected_p_value"],
     )
     mock_mapping = {
-        "gene_to_groups": {},
-        "group_to_genes": {},
+        "gene_to_protein_groups": {},
+        "protein_group_to_genes": {},
         "filtered": ["Protein1", "Protein2"],
     }
 
@@ -1392,8 +1415,8 @@ def test_gsea_preranked_catch_fail():
         columns=["Protein ID", "corrected_p_value"],
     )
     mock_mapping = {
-        "gene_to_groups": {"Gene1": "Protein1", "Gene2": "Protein2"},
-        "group_to_genes": {"Protein1": ["Gene1"], "Protein2": ["Gene2"]},
+        "gene_to_protein_groups": {"Gene1": "Protein1", "Gene2": "Protein2"},
+        "protein_group_to_genes": {"Protein1": ["Gene1"], "Protein2": ["Gene2"]},
         "filtered": [],
     }
     current_out = gsea_preranked(

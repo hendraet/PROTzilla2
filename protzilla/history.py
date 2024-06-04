@@ -33,6 +33,7 @@ class History:
         instance = cls(run_name, df_mode)
         with open(RUNS_PATH / run_name / "history.json", "r") as f:
             history_json = json.load(f, object_hook=load_objects)
+
         for index, step in enumerate(history_json):
             df_path = instance.df_path(index)
             if df_path.exists() and "memory" in instance.df_mode:
@@ -49,6 +50,7 @@ class History:
                     _dataframe=df,
                     dataframe_path=df_path if df_path.exists() else None,
                     outputs=step["outputs"],
+                    messages=[],
                     plots=[],
                 )
             )
@@ -71,7 +73,8 @@ class History:
         parameters: dict,
         dataframe: pd.DataFrame | None,
         outputs: dict,
-        plots: list,
+        messages: list[dict] = [],
+        plots: list = [],
         name: str | None = None,
     ):
         assert "dataframe" not in outputs, "output can not be named 'dataframe'"
@@ -92,6 +95,7 @@ class History:
             df,
             df_path,
             outputs,
+            messages,
             plots,
         )
         self.steps.append(executed_step)
@@ -203,6 +207,7 @@ class ExecutedStep:
     _dataframe: pd.DataFrame | None
     dataframe_path: Path | None
     outputs: dict
+    messages: list[dict]
     plots: list
 
     @property
