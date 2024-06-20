@@ -1,7 +1,6 @@
 import logging
 
 import pandas as pd
-
 from protzilla.data_integration import database_query
 from protzilla.utilities import clean_uniprot_id, unique_justseen
 
