@@ -33,7 +33,7 @@ from protzilla.data_analysis.ptm_analysis import (
 )
 from protzilla.data_analysis.ptm_quantification import flexiquant_lf
 from protzilla.methods.data_preprocessing import TransformationLog
-from protzilla.steps import Plots, Step, StepManager
+from protzilla.steps import Plots, Step, StepManager, DisplayOutput
 
 
 class DataAnalysisStep(Step):
@@ -844,7 +844,6 @@ class TimeSeriesRANSACRegression(PlotStep):
         "train_r2_score",
         "test_r2_score",
     ]
-
     def method(self, inputs: dict) -> dict:
         return time_series_ransac_regression(**inputs)
 
