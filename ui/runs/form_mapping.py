@@ -47,6 +47,7 @@ _forward_mapping = {
     data_analysis.PlotScatterPlot: data_analysis_forms.PlotScatterPlotForm,
     data_analysis.PlotClustergram: data_analysis_forms.PlotClustergramForm,
     data_analysis.PlotProtQuant: data_analysis_forms.PlotProtQuantForm,
+    data_analysis.PlotProtQuantPeptide: data_analysis_forms.PlotProtQuantPeptideForm,
     data_analysis.PlotPrecisionRecallCurve: data_analysis_forms.PlotPrecisionRecallCurveForm,
     data_analysis.PlotROC: data_analysis_forms.PlotROCCurveForm,
     data_analysis.ClusteringKMeans: data_analysis_forms.ClusteringKMeansForm,

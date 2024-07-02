@@ -368,56 +368,35 @@ class PlotProtQuantForm(MethodForm):
         label="Similarity", min_value=-1, max_value=999, step_size=1, initial=1
     )
 
-    def fill_form(self, run: Run) -> None:
-        self.fields["input_df"].choices = fill_helper.get_choices_for_protein_df_steps(
-            run
-        )
+class PlotProtQuantPeptideForm(MethodForm):
+    is_dynamic = True
 
-        input_df_instance_id = self.data.get(
-            "input_df", self.fields["input_df"].choices[0][0]
-        )
+    input_df = CustomChoiceField(
+        choices=[],
+        label="Choose dataframe to be plotted",
+    )
+    protein_group = CustomChoiceField(
+        choices=[],
+        label="Protein group: choose highlighted protein group",
+    )
+    similarity_measure = CustomChoiceField(
+        choices=SimilarityMeasure,
+        label="Similarity Measurement: choose how to compare protein groups",
+        initial=SimilarityMeasure.euclidean_distance,
+    )
+    similarity = CustomNumberField(
+        label="Similarity", min_value=-1, max_value=999, step_size=1, initial=1
+    )
+
+    def fill_form(self, run: Run) -> None:
+        self.fields["input_df"].choices = fill_helper.get_choices(run, "peptide_df")
+
 
         self.fields["protein_group"].choices = fill_helper.to_choices(
-            run.steps.get_step_output(
-                step_type=Step,
-                output_key="protein_df",
-                instance_identifier=input_df_instance_id,
-            )["Protein ID"].unique()
+            run.steps.get_step_output(Step, "peptide_df")[
+                "Protein ID"
+            ].unique()
         )
-
-        similarity_measure = self.data.get(
-            "similarity_measure", self.fields["similarity_measure"].choices[0][0]
-        )
-        self.data = self.data.copy()
-        if similarity_measure == SimilarityMeasure.cosine_similarity:
-            self.fields["similarity"] = CustomFloatField(
-                label="Cosine Similarity",
-                min_value=-1,
-                max_value=1,
-                step_size=0.1,
-                initial=0,
-            )
-            if (
-                    "similarity" not in self.data
-                    or float(self.data["similarity"]) < -1
-                    or float(self.data["similarity"]) > 1
-            ):
-                self.data["similarity"] = 0
-        else:
-            self.fields["similarity"] = CustomNumberField(
-                label="Euclidean Distance",
-                min_value=0,
-                max_value=999,
-                step_size=1,
-                initial=1,
-            )
-            if (
-                    "similarity" not in self.data
-                    or float(self.data["similarity"]) < 0
-                    or float(self.data["similarity"]) > 999
-            ):
-                self.data["similarity"] = 1
-
 
 class PlotPrecisionRecallCurveForm(MethodForm):
     # Todo: Input
