@@ -29,7 +29,6 @@ def create_pie_plot(
     """
     if any(i < 0 for i in values_of_sectors):
         raise ValueError
-    print(colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE)
     fig = px.pie(
         names=names_of_sectors,
         values=values_of_sectors,

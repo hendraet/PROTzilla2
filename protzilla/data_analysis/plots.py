@@ -7,8 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy import stats
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
-
-from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE
+import protzilla.constants.colors as colorscheme
+from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE, PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 from protzilla.utilities.clustergram import Clustergram
 from protzilla.utilities.transform_dfs import is_long_format, long_to_wide
 
@@ -324,8 +324,8 @@ def prot_quant_plot(
     fig = go.Figure()
 
     color_mapping = {
-        "A": PROTZILLA_DISCRETE_COLOR_SEQUENCE[0],
-        "C": PROTZILLA_DISCRETE_COLOR_SEQUENCE[1],
+        "A": colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[0],
+        "C": colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[3],
     }
 
     lower_upper_x = []
@@ -379,7 +379,7 @@ def prot_quant_plot(
                 y=wide_df[group],
                 mode="lines",
                 name=group[:15] + "..." if len(group) > 15 else group,
-                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[1]),
+                line=dict(color=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[2]),
                 showlegend=len(similar_groups) <= 7,
             )
         )
@@ -390,7 +390,7 @@ def prot_quant_plot(
                 x=[None],
                 y=[None],
                 mode="lines",
-                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[1]),
+                line=dict(color=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[2]),
                 name="Similar Protein Groups",
             )
         )
@@ -398,13 +398,20 @@ def prot_quant_plot(
     formatted_protein_name = (
         protein_group[:15] + "..." if len(protein_group) > 15 else protein_group
     )
+
+    if colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1] in colorscheme.MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE:
+        line_type = "lines+markers"
+        color_mapping["A"] = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[4]
+    else:
+        line_type = "lines"
+
     fig.add_trace(
         go.Scatter(
             x=wide_df.index,
             y=wide_df[protein_group],
-            mode="lines",
+            mode=line_type,
             name=formatted_protein_name,
-            line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2]),
+            line=dict(color=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1], width=3),
         )
     )
 
