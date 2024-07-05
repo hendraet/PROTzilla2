@@ -12,6 +12,7 @@ import plotly.express as px
 from pyteomics.mass import mass
 from tqdm import tqdm
 
+from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 from protzilla.constants.protzilla_logging import logger
 from protzilla.disk_operator import FileOutput
 
@@ -39,34 +40,37 @@ class OUTPUT_KEYS(StrEnum):
 AVAILABLE_MODELS = {
     "PrositIntensityHCD": {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2020_intensity_HCD/infer",
+        "citation": "Wilhelm, M., Zolg, D.P., Graber, M. et al.  Nat Commun 12, 3346 (2021). https://doi.org/10.1038/s41467-021-23713-9",
+        "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
-            "peptide_sequences",
-            "precursor_charges",
-            "collision_energies",
+            DATA_KEYS.PEPTIDE_SEQUENCE,
+            DATA_KEYS.PRECURSOR_CHARGES,
+            DATA_KEYS.COLLISION_ENERGIES,
         ],
     },
     "PrositIntensityCID": {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2020_intensity_CID/infer",
-        "required_keys": ["peptide_sequences", "precursor_charges"],
+        "citation": "Wilhelm, M., Zolg, D.P., Graber, M. et al. Nat Commun 12, 3346 (2021). https://doi.org/10.1038/s41467-021-23713-9",
+        "github_url": "https://github.com/kusterlab/prosit",
+        "required_keys": [
+            DATA_KEYS.PEPTIDE_SEQUENCE,
+            DATA_KEYS.PRECURSOR_CHARGES,
+        ],
     },
-    # "PrositIntensityXL_CMS3": {
-    #    "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2023_intensity_XL_CMS3/infer",
-    #    "required_keys": ["peptide_sequences", "precursor_charges"],
-    # },
-    # "PrositIntensityXL_CMS2": {
-    #     "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2023_intensity_XL_CMS2/infer",
-    #     "required_keys": ["peptide_sequences", "precursor_charges"]
-    # },
     "PrositIntensityTimsTOF": {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2023_intensity_timsTOF/infer",
+        "citation": "C., Gabriel, W., Laukens, K. et al. Nat Commun 15, 3956 (2024). https://doi.org/10.1038/s41467-024-48322-0",
+        "github_url": None,
         "required_keys": [
-            "peptide_sequences",
-            "precursor_charges",
-            "collision_energies",
+            DATA_KEYS.PEPTIDE_SEQUENCE,
+            DATA_KEYS.PRECURSOR_CHARGES,
+            DATA_KEYS.COLLISION_ENERGIES,
         ],
     },
     "PrositIntensityTMT": {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2020_intensity_TMT/infer",
+        "citation": " Wassim Gabriel, Matthew The, Daniel P. Zolg, Florian P. Bayer, et al. Analytical Chemistry 2022 94 (20), 7181-7190 https://doi.org/10.1021/acs.analchem.1c05435",
+        "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
             DATA_KEYS.PEPTIDE_SEQUENCE,
             DATA_KEYS.PRECURSOR_CHARGES,
@@ -134,6 +138,7 @@ class KoinaModel(SpectrumPredictor):
         required_keys: list[str],
         url: str,
         prediction_df: Optional[pd.DataFrame] = None,
+        **kwargs,
     ):
         super().__init__(prediction_df)
         self.required_keys = required_keys
@@ -534,50 +539,49 @@ class SpectrumExporter:
         return FileOutput(base_file_name, file_extension, content)
 
 
-def plot_spectrum(prediction_df: pd.DataFrame, peptide: str, charge: int):
-    threshold = 0.1
+def plot_spectrum(
+    prediction_df: pd.DataFrame, peptide: str, charge: int, annotation_threshold: float
+):
+    assert 0 <= annotation_threshold and annotation_threshold <= 1
+    b_ion_color, y_ion_color = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     spectrum = prediction_df[
         (prediction_df["Sequence"] == peptide) & (prediction_df["Charge"] == charge)
     ]
-    mz_values = spectrum["m/z"].values
-    intensity_values = spectrum["Intensity"].values
-    fragment_types = spectrum["fragment_type"].values
-    fragment_charges = spectrum["fragment_charge"].values
-
+    plot_df = spectrum[["m/z", "Intensity", "fragment_type", "fragment_charge"]]
+    plot_df["fragment_ion"] = [fragment[0] for fragment in plot_df["fragment_type"]]
     # Plotting the peaks
-    color_list = [
-        "blue" if "b" in fragment_type else "red" for fragment_type in fragment_types
-    ]
     fig = px.bar(
-        x=mz_values,
-        y=intensity_values,
-        color=color_list,
+        plot_df,
+        x="m/z",
+        y="Intensity",
+        hover_data=["fragment_type", "fragment_charge"],
         labels={"x": "m/z", "y": "Relative intensity"},
+        color="fragment_ion",
+        color_discrete_map={"b": b_ion_color, "y": y_ion_color},
         title=f"{peptide} ({charge}+)",
     )
-    fig.update_traces(hovertemplate="m/z: %{x}<br>Intensity: %{y}")
     fig.update_traces(width=3.0)
 
     # Adding the annotations
-    for i, (fragment_type, fragment_charge) in enumerate(
-        zip(fragment_types, fragment_charges)
-    ):
-        if intensity_values[i] < threshold:
+    for _, row in plot_df.iterrows():
+        if row["Intensity"] < annotation_threshold:
             continue
         fig.add_annotation(
-            x=mz_values[i],
-            y=intensity_values[i],
-            font=dict(color="blue" if "y" in fragment_type else "red"),
-            text=f"{fragment_type} ({fragment_charge}+)",
+            x=row["m/z"],
+            y=row["Intensity"],
+            font=dict(
+                color=y_ion_color if "y" in row["fragment_type"] else b_ion_color
+            ),
+            text=f"{row['fragment_type']} ({row['fragment_charge']}+)",
             showarrow=False,
             yshift=25,
             textangle=-90,
         )
 
-    # Updating the color legend to say "y" and "b" instead of "blue" and "red"
+    # Updating the color legend to say "y" and "b" instead of the color codes
     fig.for_each_trace(
         lambda trace: trace.update(
-            name=trace.name.replace("blue", "b-ion").replace("red", "y-ion")
+            name=trace.name.replace(b_ion_color, "b-ion").replace(y_ion_color, "y-ion")
         )
     )
     # Replace title of legend with "Fragment type"

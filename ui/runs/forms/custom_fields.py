@@ -1,3 +1,4 @@
+import json
 import logging
 from enum import Enum
 
@@ -126,3 +127,16 @@ class CustomFloatField(FloatField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.widget.attrs.update({"class": "form-control mb-2"})
+
+
+class CustomInformedChoiceField(CustomChoiceField):
+    def __init__(self, choices: Enum | list, initial=None, *args, **kwargs):
+        self.info = kwargs.pop("info", {})
+        super().__init__(choices, initial, *args, **kwargs)
+
+    def widget_attrs(self, widget):
+        attrs = super().widget_attrs(widget)
+        json_data = json.dumps(self.info)
+        attrs["data-info"] = json_data
+        attrs["id"] = "custom_informed_choice_field"
+        return attrs

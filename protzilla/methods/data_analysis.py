@@ -756,11 +756,11 @@ class PredictSpectra(DataAnalysisStep):
 
 
 class PlotPredictedSpectra(PlotStep):
-    display_name = "Plot Predicted Spectra"
+    display_name = "Predicted Spetrum Plot"
     operation = "plot"
     method_description = "Plot the predicted spectrum of a peptide"
 
-    input_keys = ["prediction_df", "peptide", "charge"]
+    input_keys = ["prediction_df", "peptide", "charge", "annotation_threshold"]
     output_keys = []
 
     def method(self, inputs: dict) -> dict:

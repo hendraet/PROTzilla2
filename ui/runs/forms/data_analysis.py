@@ -1,5 +1,6 @@
 from enum import Enum, StrEnum
 
+import protzilla.data_analysis.spectrum_prediction_utils
 from protzilla.data_analysis import spectrum_prediction
 from protzilla.methods.data_analysis import (
     DataAnalysisStep,
@@ -20,6 +21,7 @@ from .custom_fields import (
     CustomCharField,
     CustomChoiceField,
     CustomFloatField,
+    CustomInformedChoiceField,
     CustomMultipleChoiceField,
     CustomNumberField,
 )
@@ -988,19 +990,20 @@ class ProteinGraphVariationGraphForm(MethodForm):
 
 
 class PredictSpectraForm(MethodForm):
-    model_name = CustomChoiceField(
-        choices=[], label="Choose the Prosit model to predict with"
+    model_name = CustomInformedChoiceField(
+        choices=fill_helper.to_choices(spectrum_prediction.AVAILABLE_MODELS.keys()),
+        label="Choose the Prosit model to predict with",
+        info={
+            model_name: protzilla.data_analysis.spectrum_prediction_utils.format_citation(
+                model_name
+            )
+            for model_name in spectrum_prediction.AVAILABLE_MODELS.keys()
+        },
     )
-    output_format = CustomChoiceField(choices=[], label="The format of the output file")
-
-    def fill_form(self, run: Run) -> None:
-        self.fields["model_name"].choices = fill_helper.to_choices(
-            spectrum_prediction.AVAILABLE_MODELS.keys()
-        )
-
-        self.fields["output_format"].choices = fill_helper.to_choices(
-            spectrum_prediction.AVAILABLE_FORMATS
-        )
+    output_format = CustomChoiceField(
+        choices=fill_helper.to_choices(spectrum_prediction.AVAILABLE_FORMATS),
+        label="The format of the output file",
+    )
 
 
 class PlotPredictedSpectraForm(MethodForm):
@@ -1016,6 +1019,14 @@ class PlotPredictedSpectraForm(MethodForm):
     charge = CustomChoiceField(
         choices=[],
         label="Choose the charge of the peptide",
+    )
+
+    annotation_threshold = CustomFloatField(
+        label="Annotation threshold",
+        min_value=0.0,
+        max_value=1,
+        step_size=0.01,
+        initial=0.2,
     )
 
     def fill_form(self, run: Run) -> None:
