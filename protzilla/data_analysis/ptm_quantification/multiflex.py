@@ -391,7 +391,7 @@ def multiflex_lf(
     end = time.time()
     message = dict(
         level=logging.INFO,
-        msg=f"Finished with MultiFLEX-LF analysis in {end-start:.1f} seconds.",
+        msg=f"Finished with MultiFLEX-LF analysis in ~{end-start:.1f} seconds.",
     )
 
     return dict(
