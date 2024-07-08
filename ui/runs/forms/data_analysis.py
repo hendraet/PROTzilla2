@@ -1,7 +1,6 @@
 from enum import Enum, StrEnum
 
 import protzilla.data_analysis.spectrum_prediction_utils
-from protzilla.data_analysis import spectrum_prediction
 from protzilla.methods.data_analysis import (
     DataAnalysisStep,
     DifferentialExpressionLinearModel,
@@ -991,17 +990,21 @@ class ProteinGraphVariationGraphForm(MethodForm):
 
 class PredictSpectraForm(MethodForm):
     model_name = CustomInformedChoiceField(
-        choices=fill_helper.to_choices(spectrum_prediction.AVAILABLE_MODELS.keys()),
+        choices=fill_helper.to_choices(
+            protzilla.data_analysis.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
+        ),
         label="Choose the Prosit model to predict with",
         info={
             model_name: protzilla.data_analysis.spectrum_prediction_utils.format_citation(
                 model_name
             )
-            for model_name in spectrum_prediction.AVAILABLE_MODELS.keys()
+            for model_name in protzilla.data_analysis.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
         },
     )
     output_format = CustomChoiceField(
-        choices=fill_helper.to_choices(spectrum_prediction.AVAILABLE_FORMATS),
+        choices=fill_helper.to_choices(
+            protzilla.data_analysis.spectrum_prediction_utils.AVAILABLE_FORMATS
+        ),
         label="The format of the output file",
     )
 
