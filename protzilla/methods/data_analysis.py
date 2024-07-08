@@ -651,7 +651,6 @@ class MultiFLEXLF(PlotStep):
         "reference_group",
         "num_init",
         "mod_cutoff",
-        "remove_outliers",
         "imputation_cosine_similarity",
         "deseq2_normalization",
         "colormap",
@@ -663,7 +662,6 @@ class MultiFLEXLF(PlotStep):
         "raw_scores",
         "removed_peptides",
         "RM_scores",
-        "sample_groups",
     ]
 
     def method(self, inputs: dict) -> dict:
@@ -675,6 +673,7 @@ class MultiFLEXLF(PlotStep):
         )
 
         inputs["metadata_df"] = steps.metadata_df
+        inputs["colormap"] = int(inputs["colormap"])
         return inputs
 
 

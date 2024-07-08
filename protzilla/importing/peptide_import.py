@@ -65,12 +65,12 @@ def peptide_import(file_path, intensity_name, map_to_uniprot) -> dict:
             by=["Sample", "Protein ID"], ignore_index=True, inplace=True
         )
 
-    new_groups, filtered_proteins = clean_protein_groups(
-        ordered["Protein ID"].tolist(), map_to_uniprot
-    )
-    cleaned = ordered.assign(**{"Protein ID": new_groups})
+    # new_groups, filtered_proteins = clean_protein_groups(
+    #     ordered["Protein ID"].tolist(), map_to_uniprot
+    # )
+    # cleaned = ordered.assign(**{"Protein ID": new_groups})
 
-    return dict(peptide_df=cleaned)
+    return dict(peptide_df=ordered)
 
 
 def evidence_import(file_path, intensity_name, map_to_uniprot) -> dict:
