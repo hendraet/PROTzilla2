@@ -3,13 +3,13 @@ import pandas as pd
 import pytest
 
 
-from protzilla.data_analysis.power_analysis import variance_protein_group_calculation, sample_size_calculation
+from protzilla.data_analysis.power_analysis import sample_size_calculation, check_sample_size_calculation_with_libfunc, check_sample_size_calculation_implemented, check_sample_size_calculation_implemented_without_log
 
 
 @pytest.fixture
 def power_test_data():
     test_differentially_expressed_proteins_list = (
-        ["Sample1", "Protein1", "Gene1", 20, "Group1"],
+        ["Sample1", "Protein1", "Gene1", 18, "Group1"],
         ["Sample1", "Protein2", "Gene1", 16, "Group1"],
         ["Sample1", "Protein3", "Gene1", 1, "Group1"],
         ["Sample1", "Protein4", "Gene1", 14, "Group1"],
@@ -84,6 +84,82 @@ def test_sample_size_calculation(
     assert required_sample_size_int == 63
 
 
+def test_check_sample_size_calculation_with_libfun(
+        power_test_data
+
+):
+    test_alpha = 0.05
+    test_power = 0.8
+    test_fc_threshold = 5
+    test_selected_protein_group = "Protein1"
+
+    required_sample_size = check_sample_size_calculation_with_libfunc(
+        differentially_expressed_proteins_df=power_test_data,
+        significant_proteins_df=power_test_data,
+        fc_threshold=test_fc_threshold,
+        power=test_power,
+        alpha=test_alpha,
+        group1="Group1",
+        group2="Group2",
+        selected_protein_group=test_selected_protein_group,
+        significant_proteins_only=False,
+        intensity_name=None
+    )
+    print(required_sample_size)
+    required_sample_size_int = next(iter(required_sample_size.values()), None)
+    assert required_sample_size_int == 63
+
+def test_check_sample_size_calculation_impl(
+        power_test_data
+
+):
+    test_alpha = 0.05
+    test_power = 0.8
+    power_test_data_log2 = power_test_data.copy()
+    power_test_data_log2["Normalised iBAQ"] = np.log2(power_test_data_log2["Normalised iBAQ"])
+    fc_threshold = 1
+    test_selected_protein_group = "Protein1"
+
+    required_sample_size = check_sample_size_calculation_implemented(
+        differentially_expressed_proteins_df=power_test_data_log2,
+        significant_proteins_df=power_test_data,
+        fc_threshold=fc_threshold,
+        power=test_power,
+        alpha=test_alpha,
+        group1="Group1",
+        group2="Group2",
+        selected_protein_group=test_selected_protein_group,
+        significant_proteins_only=False,
+        intensity_name=None
+    )
+    print(required_sample_size)
+    required_sample_size_int = next(iter(required_sample_size.values()), None)
+    assert required_sample_size_int == 63
+
+def test_check_sample_size_calculation_implemented_without_log(
+        power_test_data
+
+):
+    test_alpha = 0.05
+    test_power = 0.8
+    test_fc_threshold = 5
+    test_selected_protein_group = "Protein1"
+
+    required_sample_size = check_sample_size_calculation_implemented_without_log(
+        differentially_expressed_proteins_df=power_test_data,
+        significant_proteins_df=power_test_data,
+        fc_threshold=test_fc_threshold,
+        power=test_power,
+        alpha=test_alpha,
+        group1="Group1",
+        group2="Group2",
+        selected_protein_group=test_selected_protein_group,
+        significant_proteins_only=False,
+        intensity_name=None
+    )
+    print(required_sample_size)
+    required_sample_size_int = next(iter(required_sample_size.values()), None)
+    assert required_sample_size_int == 63
 
 
 
