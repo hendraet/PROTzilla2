@@ -5,8 +5,12 @@ import pandas as pd
 import pytest
 
 from protzilla.constants.paths import PEPTIDE_TEST_DATA_PATH
-from protzilla.data_analysis.spectrum_prediction import KoinaModel
-from protzilla.data_analysis.spectrum_prediction_utils import DATA_KEYS
+from protzilla.data_analysis.spectrum_prediction import (
+    KoinaModel,
+    Spectrum,
+    SpectrumExporter,
+)
+from protzilla.data_analysis.spectrum_prediction_utils import DATA_KEYS, OUTPUT_KEYS
 from protzilla.methods.data_analysis import PredictSpectra
 from protzilla.methods.importing import EvidenceImport
 
@@ -136,8 +140,7 @@ def test_spectrum_prediction_with_invalid_peptides(
         {"model_name": "PrositIntensityHCD", "output_format": "msp"}
     )
     assert (
-        "predicted_spectra_df"
-        not in spectrum_prediction_run_bad_evidence.current_outputs
+        "predicted_spectra_df" in spectrum_prediction_run_bad_evidence.current_outputs
     )
     return
 
@@ -319,3 +322,98 @@ def test_extract_fragment_information_handles_mixed_annotations():
     )
     np.testing.assert_array_equal(fragment_charges, expected_charges)
     np.testing.assert_array_equal(fragment_types, expected_types)
+
+
+def test_create_spectrum_with_valid_data():
+    row = pd.Series(
+        {DATA_KEYS.PEPTIDE_SEQUENCE: "PEPTIDE", DATA_KEYS.PRECURSOR_CHARGES: 2}
+    )
+    prepared_data = {
+        OUTPUT_KEYS.MZ_VALUES: np.array([[100, 200, 300]]),
+        OUTPUT_KEYS.INTENSITY_VALUES: np.array([[0.1, 0.2, 0.3]]),
+        OUTPUT_KEYS.FRAGMENT_TYPE: np.array([["b", "y", "b"]]),
+        OUTPUT_KEYS.FRAGMENT_CHARGE: np.array([[1, 2, 1]]),
+    }
+    index = 0
+
+    spectrum = KoinaModel.create_spectrum(row, prepared_data, index)
+
+    assert isinstance(spectrum, Spectrum)
+    assert spectrum.peptide_sequence == "PEPTIDE"
+    assert spectrum.peptide_charge == 2
+    assert np.array_equal(
+        spectrum.spectrum["m/z"].values, prepared_data[OUTPUT_KEYS.MZ_VALUES][index]
+    )
+    assert np.array_equal(
+        spectrum.spectrum["Intensity"].values,
+        prepared_data[OUTPUT_KEYS.INTENSITY_VALUES][index],
+    )
+    assert np.array_equal(
+        spectrum.spectrum[OUTPUT_KEYS.FRAGMENT_TYPE],
+        prepared_data[OUTPUT_KEYS.FRAGMENT_TYPE][index],
+    )
+    assert np.array_equal(
+        spectrum.spectrum[OUTPUT_KEYS.FRAGMENT_CHARGE],
+        prepared_data[OUTPUT_KEYS.FRAGMENT_CHARGE][index],
+    )
+
+
+def test_create_spectrum_with_missing_data():
+    row = pd.Series(
+        {
+            DATA_KEYS.PEPTIDE_SEQUENCE: "PEPTIDE",
+        }
+    )
+    prepared_data = {
+        OUTPUT_KEYS.MZ_VALUES: np.array([100, 200, 300]),
+        OUTPUT_KEYS.INTENSITY_VALUES: np.array([0.1, 0.2, 0.3]),
+    }
+    index = 1
+
+    with pytest.raises(ValueError):
+        KoinaModel.create_spectrum(row, prepared_data, index)
+
+
+import pandas as pd
+import pytest
+
+from protzilla.data_analysis.spectrum_prediction import OUTPUT_KEYS, SpectrumExporter
+
+
+def test_peak_annotation_with_valid_data():
+    spectrum_df = pd.DataFrame(
+        {
+            "m/z": [100, 200, 300],
+            "Intensity": [0.1, 0.2, 0.3],
+            OUTPUT_KEYS.FRAGMENT_TYPE: ["b", "y", "b"],
+            OUTPUT_KEYS.FRAGMENT_CHARGE: [1, 2, 1],
+        }
+    )
+    result = SpectrumExporter.format_peaks(spectrum_df)
+    expected = ['100.0\t0.1\t"b^1"\n', '200.0\t0.2\t"y^2"\n', '300.0\t0.3\t"b^1"\n']
+    assert result == expected
+
+
+def test_peak_annotation_with_empty_data():
+    spectrum_df = pd.DataFrame(
+        {
+            "m/z": [],
+            "Intensity": [],
+        }
+    )
+    result = SpectrumExporter.format_peaks(spectrum_df)
+    assert result == []
+
+
+def test_peak_annotation_with_custom_prefix_suffix():
+    spectrum_df = pd.DataFrame(
+        {
+            "m/z": [100, 200, 300],
+            "Intensity": [0.1, 0.2, 0.3],
+            OUTPUT_KEYS.FRAGMENT_TYPE: ["b", "y", "b"],
+            OUTPUT_KEYS.FRAGMENT_CHARGE: [1, 2, 1],
+        }
+    )
+    result = SpectrumExporter.format_peaks(spectrum_df, prefix="(", suffix=")")
+    expected = ["100.0\t0.1\t(b^1)\n", "200.0\t0.2\t(y^2)\n", "300.0\t0.3\t(b^1)\n"]
+    assert result == expected

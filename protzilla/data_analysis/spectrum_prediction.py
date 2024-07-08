@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Optional
+from typing import Dict, Optional
 
 import aiohttp
 import numpy as np
@@ -41,6 +41,7 @@ class Spectrum:
         self.metadata[
             "Charge"
         ] = charge  # TODO maybe this can be handled in the exporting functions instead
+        self.peptide_charge = charge
 
         self.spectrum = pd.DataFrame(
             zip(mz_values, intensity_values), columns=["m/z", "Intensity"]
@@ -66,7 +67,7 @@ class Spectrum:
 
 
 class SpectrumPredictor:
-    def __init__(self, prediction_df: pd.DataFrame):
+    def __init__(self, prediction_df: Optional[pd.DataFrame]):
         self.prediction_df = prediction_df
 
     def predict(self):
@@ -140,11 +141,11 @@ class KoinaModel(SpectrumPredictor):
         predicted_spectra = []
         slice_indices = self.slice_dataframe()
         formatted_data = self.format_dataframes(slice_indices)
-        response_data = asyncio.run(self.make_request(formatted_data))
-        for indices, response in tqdm(
-            zip(slice_indices, response_data),
+        response_data = asyncio.run(self.make_request(formatted_data, slice_indices))
+        for response, indices in tqdm(
+            response_data,
             desc="Processing predictions",
-            total=len(slice_indices),
+            total=len(response_data),
         ):
             predicted_spectra.extend(
                 self.process_response(self.prediction_df.loc[indices], response)
@@ -206,52 +207,46 @@ class KoinaModel(SpectrumPredictor):
             )
         return {"id": "0", "inputs": inputs}
 
-    async def make_request(self, formatted_data: list[dict]) -> list[dict]:
-        """Asynchronously make a POST request to the Koina API. Returns the response data as a list of dictionaries."""
+    async def make_request(
+        self, formatted_data: list[dict], slice_indices: list
+    ) -> list[dict]:
+        """Asynchronously make a POST request to the Koina API. Returns the response data as a list of dictionaries.
+        In the case of an error, we will recursively divide and conquer the data until we get a successful response.
+        """
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for data in formatted_data:
-                tasks.append(session.post(self.KOINA_URL, data=json.dumps(data)))
-            responses = await asyncio.gather(*tasks)
-            json_responses = []
-            for response in responses:
+            for data, indices in zip(formatted_data, slice_indices):
+                tasks.append(
+                    (session.post(self.KOINA_URL, data=json.dumps(data)), indices)
+                )
+                logger.info(
+                    f"Requesting {len(indices)} spectra {indices[0]}-{indices[-1]}..."
+                )
+            responses = []
+            for task, indices in tasks:
+                response = await task
                 if response.status != 200:
-                    # TODO add error handling here
-                    logging.error(f"Error in response: {response.status}")
-                    logging.error(await response.text())
-                    continue
-                json_responses.append(await response.json())
-        return json_responses
-
-    # @staticmethod
-    # def process_response(request: pd.DataFrame, response: dict) -> pd.DataFrame:
-    #     results = KoinaModel.extract_data_from_response(response)
-    #     fragment_charges, fragment_types = KoinaModel.extract_fragment_information(results)
-    #     results[OUTPUT_KEYS.FRAGMENT_TYPE] = fragment_types
-    #     results[OUTPUT_KEYS.FRAGMENT_CHARGE] = fragment_charges
-    #
-    #     spectra = []
-    #     for i, (_, row) in request.iterrows():
-    #         spectra.append(
-    #             Spectrum(
-    #                 row[DATA_KEYS.PEPTIDE_SEQUENCE],
-    #                 row[DATA_KEYS.PRECURSOR_CHARGES],
-    #                 results.get(OUTPUT_KEYS.MZ_VALUES)[i],
-    #                 results.get(OUTPUT_KEYS.INTENSITY_VALUES)[i],
-    #                 annotations={
-    #                     OUTPUT_KEYS.FRAGMENT_TYPE: results.get(
-    #                         OUTPUT_KEYS.FRAGMENT_TYPE
-    #                     )[i],
-    #                     OUTPUT_KEYS.FRAGMENT_CHARGE: results.get(
-    #                         OUTPUT_KEYS.FRAGMENT_CHARGE
-    #                     )[i],
-    #                 },
-    #             )
-    #         )
-    #     return spectra
+                    if len(indices) > 1:
+                        mid = len(indices) // 2
+                        a, b = indices[:mid], indices[mid:]
+                        logger.warning(
+                            f"Error response received for {indices[0]}-{indices[-1]}, splitting data: {a[0]}-{a[-1]} and {b[0]}-{b[-1]}..."
+                        )
+                        formatted_data = self.format_dataframes([a, b])
+                        responses.extend(
+                            await self.make_request(formatted_data, [a, b])
+                        )
+                    else:
+                        logger.error(
+                            f"Skipping peptide {self.prediction_df.loc[indices[0]][DATA_KEYS.PEPTIDE_SEQUENCE]} with charge {self.prediction_df.loc[indices[0]][DATA_KEYS.PRECURSOR_CHARGES]}."
+                        )
+                        logger.debug(f"Error in response: {await response.text()}")
+                else:
+                    responses.append((await response.json(), indices))
+        return responses
 
     @staticmethod
-    def process_response(request: pd.DataFrame, response: dict) -> pd.DataFrame:
+    def process_response(request: pd.DataFrame, response: dict) -> list[Spectrum]:
         prepared_data = KoinaModel.prepare_data(response)
         return [
             KoinaModel.create_spectrum(row, prepared_data, i)
@@ -269,21 +264,31 @@ class KoinaModel(SpectrumPredictor):
         return results
 
     @staticmethod
-    def create_spectrum(row: pd.Series, prepared_data: dict, index: int) -> Spectrum:
-        return Spectrum(
-            row[DATA_KEYS.PEPTIDE_SEQUENCE],
-            row[DATA_KEYS.PRECURSOR_CHARGES],
-            prepared_data.get(OUTPUT_KEYS.MZ_VALUES)[index],
-            prepared_data.get(OUTPUT_KEYS.INTENSITY_VALUES)[index],
-            annotations={
+    def create_spectrum(
+        row: pd.Series, prepared_data: Dict[str, np.ndarray], index: int
+    ) -> Spectrum:
+        try:
+            peptide_sequence = row.get(DATA_KEYS.PEPTIDE_SEQUENCE)
+            precursor_charges = row.get(DATA_KEYS.PRECURSOR_CHARGES)
+            mz_values = prepared_data.get(OUTPUT_KEYS.MZ_VALUES)[index]
+            intensity_values = prepared_data.get(OUTPUT_KEYS.INTENSITY_VALUES)[index]
+            annotations = {
                 OUTPUT_KEYS.FRAGMENT_TYPE: prepared_data.get(OUTPUT_KEYS.FRAGMENT_TYPE)[
                     index
                 ],
                 OUTPUT_KEYS.FRAGMENT_CHARGE: prepared_data.get(
                     OUTPUT_KEYS.FRAGMENT_CHARGE
                 )[index],
-            },
-        )
+            }
+            return Spectrum(
+                peptide_sequence,
+                precursor_charges,
+                mz_values,
+                intensity_values,
+                annotations=annotations,
+            )
+        except (KeyError, TypeError) as e:
+            raise ValueError(f"Error while creating spectrum: {e}")
 
     @staticmethod
     def extract_fragment_information(fragment_annotations: np.array):
@@ -305,7 +310,7 @@ class KoinaModel(SpectrumPredictor):
         return fragment_charges, fragment_types
 
     @staticmethod
-    def extract_data_from_response(response):
+    def extract_data_from_response(response: dict):
         results = {}
         for output in response["outputs"]:
             results[output["name"]] = np.reshape(output["data"], output["shape"])
@@ -346,6 +351,8 @@ def predict(
         "predicted_spectra": output,
         "predicted_spectra_df": pd.concat(
             [spectrum.to_mergeable_df() for spectrum in predicted_spectra]
+            if predicted_spectra
+            else pd.DataFrame()
         ),
         "messages": [
             {
@@ -369,7 +376,7 @@ class SpectrumExporter:
                 "Num Peaks": len(spectrum.spectrum),
             }
             header = "\n".join([f"{k}: {v}" for k, v in header_dict.items()])
-            peaks = SpectrumExporter._annotate_peak_strs_v2(spectrum.spectrum)
+            peaks = SpectrumExporter.format_peaks(spectrum.spectrum)
             peaks = "".join(peaks)
             lines.append(f"{header}\n{peaks}\n")
 
@@ -381,7 +388,7 @@ class SpectrumExporter:
         return FileOutput(base_file_name, "msp", content)
 
     @staticmethod
-    def _annotate_peak_strs_v2(
+    def format_peaks(
         spectrum_df: pd.DataFrame,
         prefix='"',
         seperator=" ",
@@ -393,7 +400,9 @@ class SpectrumExporter:
             for mz, intensity in spectrum_df[["m/z", "Intensity"]].values
         ]
         annotations = [f"{prefix}" for _ in spectrum_df.values]
-        if len(spectrum_df.columns) > 2:
+        if len(spectrum_df.columns) <= 2:
+            pass
+        else:
             for column in spectrum_df.columns[2:]:
                 if column == OUTPUT_KEYS.FRAGMENT_CHARGE:
                     annotations = [
@@ -419,41 +428,6 @@ class SpectrumExporter:
             ]
 
         return peaks
-
-    @staticmethod
-    def _annotate_peak_strs(
-        peaks: list[str],
-        annotations: list[list[str]],
-        prefix='"',
-        seperator=" ",
-        suffix='"',
-        add_newline=True,
-    ):
-        combined_annotations = [prefix for _ in range(len(peaks))]
-        for annotation in annotations:
-            # preprocess annotations
-            combined_annotations = [
-                current_annotation_str + peak_annotation + seperator
-                for current_annotation_str, peak_annotation in zip(
-                    combined_annotations, annotation
-                )
-            ]
-        # remove last seperator
-        combined_annotations = [
-            current_annotation_str[:-1]
-            for current_annotation_str in combined_annotations
-        ]
-        combined_annotations = [
-            current_annotation_str + suffix
-            for current_annotation_str in combined_annotations
-        ]
-        new_peaks = [
-            f"{peak}\t{annotation}"
-            for peak, annotation in zip(peaks, combined_annotations)
-        ]
-        if add_newline:
-            new_peaks = [f"{peak}\n" for peak in new_peaks]
-        return new_peaks
 
     @staticmethod
     def export_to_csv(

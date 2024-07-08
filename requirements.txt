@@ -37,3 +37,4 @@ sphinx==7.2.6
 sphinx-autoapi==3.0.0
 openpyxl==3.1.2
 pyteomics==4.7.2
+aiohttp==3.9.5
