@@ -21,7 +21,7 @@ from protzilla.data_analysis.plots import (
     prot_quant_plot,
     scatter_plot,
 )
-from protzilla.data_analysis.power_analysis import sample_size_calculation
+from protzilla.data_analysis.power_analysis import sample_size_calculation, power_calculation
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager, DisplayOutput
@@ -764,16 +764,49 @@ class PTMsProteinAndPerSample(DataAnalysisStep):
 class PowerAnalysisPowerCalculation(DataAnalysisStep):
     display_name = "Power Calculation"
     operation = "Power Analysis"
-    method_description = "post-hoc Power Calculation"
+    method_description = "Calculates power of the test for given protein groups"
 
     input_keys = [
-        "significant_proteins_df"
+        "significant_proteins_df",
+        "differentially_expressed_proteins_df",
+        "selected_protein_group",
+        "significant_proteins_df",
+        "significant_proteins_only",
+        "fc_threshold",
+        "alpha",
+        "group1",
+        "group2",
     ]
+    output_keys = ["power",]
+
+    def method(self, inputs: dict) -> dict:
+        return power_calculation(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["differentially_expressed_proteins_df"] = steps.get_step_output(
+            Step, "differentially_expressed_proteins_df", inputs["input_dict"]
+        )
+        step = next(
+            s for s in steps.all_steps if s.instance_identifier == inputs["input_dict"]
+        )
+        inputs["significant_proteins_df"] = steps.get_step_output(
+            Step, "significant_proteins_df", inputs["input_dict"]
+        )
+
+        inputs["alpha"] = step.inputs["alpha"]
+        inputs["group1"] = step.inputs["group1"]
+        inputs["group2"] = step.inputs["group2"]
+        return inputs
+
+    def handle_outputs(self, outputs: dict):
+        super().handle_outputs(outputs)
+        self.display_output["power"] = f"Power of the test: {outputs['power']}"
+
 
 class PowerAnalysisSampleSizeCalculation(DataAnalysisStep):
     display_name = "Sample Size Calculation"
     operation = "Power Analysis"
-    method_description = "Calculates sample size for protein groups"
+    method_description = "Calculates sample size for given protein groups"
 
     input_keys = [
         "differentially_expressed_proteins_df",
