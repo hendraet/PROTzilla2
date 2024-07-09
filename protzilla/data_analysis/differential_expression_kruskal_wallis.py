@@ -10,7 +10,7 @@ from protzilla.utilities.transform_dfs import long_to_wide
 
 
 def kruskal_wallis_test_on_intensity_data(
-        intensity_df: pd.DataFrame,
+        protein_df: pd.DataFrame,
         metadata_df: pd.DataFrame,
         grouping: str,
         selected_groups: list = None,
@@ -21,7 +21,7 @@ def kruskal_wallis_test_on_intensity_data(
     """
     Perform Kruskal Wallis test on all proteins in the given intensity data frame.
 
-    @param intensity_df: A protein dataframe in typical PROTzilla long format.
+    @param protein_df: A protein dataframe in typical PROTzilla long format.
     @param metadata_df: The metadata data frame containing the grouping information.
     @param grouping: The column name in the metadata data frame that contains the grouping information,
         that should be used.
@@ -40,7 +40,7 @@ def kruskal_wallis_test_on_intensity_data(
             (depending on the selected multiple testing correction method corrected_alpha may be equal to alpha)
         - a list messages (optional), containing messages for the user
     """
-    wide_df = long_to_wide(intensity_df)
+    wide_df = long_to_wide(protein_df)
 
     outputs = kruskal_wallis_test_on_columns(
         df=wide_df,
@@ -54,7 +54,7 @@ def kruskal_wallis_test_on_intensity_data(
     )
     differentially_expressed_proteins_df, significant_proteins_df = (
         merge_differential_expression_and_significant_df(
-            intensity_df=wide_df,
+            intensity_df=protein_df,
             diff_exp_df=outputs["differential_expressed_columns_df"],
             sig_df=outputs["significant_columns_df"]
         ))

@@ -161,8 +161,8 @@ class DifferentialExpressionANOVAForm(MethodForm):
         label="Multiple testing correction",
         initial=MultipleTestingCorrectionMethod.benjamini_hochberg,
     )
-    alpha = CustomNumberField(
-        label="Error rate (alpha)", min_value=0, max_value=1, initial=0.05
+    alpha = CustomFloatField(
+        label="Error rate (alpha)", min_value=0, max_value=1, step_size=0.01, initial=0.05
     )
 
     grouping = CustomChoiceField(choices=[], label="Grouping from metadata")
@@ -199,7 +199,7 @@ class DifferentialExpressionTTestForm(MethodForm):
         label="Error rate (alpha)",
         min_value=0,
         max_value=1,
-        step_size=0.05,
+        step_size=0.01,
         initial=0.05,
     )
     # log_base = CustomChoiceField(
@@ -249,7 +249,7 @@ class DifferentialExpressionLinearModelForm(MethodForm):
         initial=MultipleTestingCorrectionMethod.benjamini_hochberg,
     )
     alpha = CustomFloatField(
-        label="Error rate (alpha)", min_value=0, max_value=1, initial=0.05
+        label="Error rate (alpha)", min_value=0, max_value=1, step_size=0.01, initial=0.05
     )
     grouping = CustomChoiceField(choices=[], label="Grouping from metadata")
     group1 = CustomChoiceField(choices=[], label="Group 1")
@@ -286,8 +286,8 @@ class DifferentialExpressionLinearModelForm(MethodForm):
 class DifferentialExpressionMannWhitneyOnIntensityForm(MethodForm):
     is_dynamic = True
 
-    intensity_df = CustomChoiceField(
-        choices=[], label="Step to use intensity data from"
+    protein_df = CustomChoiceField(
+        choices=[], label="Step to use protein data from"
     )
     multiple_testing_correction_method = CustomChoiceField(
         choices=MultipleTestingCorrectionMethod,
@@ -295,14 +295,14 @@ class DifferentialExpressionMannWhitneyOnIntensityForm(MethodForm):
         initial=MultipleTestingCorrectionMethod.benjamini_hochberg,
     )
     alpha = CustomFloatField(
-        label="Error rate (alpha)", min_value=0, max_value=1, initial=0.05
+        label="Error rate (alpha)", min_value=0, max_value=1, step_size=0.01, initial=0.05
     )
     grouping = CustomChoiceField(choices=[], label="Grouping from metadata")
     group1 = CustomChoiceField(choices=[], label="Group 1")
     group2 = CustomChoiceField(choices=[], label="Group 2")
 
     def fill_form(self, run: Run) -> None:
-        self.fields["intensity_df"].choices = fill_helper.get_choices_for_protein_df_steps(run)
+        self.fields["protein_df"].choices = fill_helper.get_choices_for_protein_df_steps(run)
 
         self.fields["grouping"].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
 
@@ -341,7 +341,7 @@ class DifferentialExpressionMannWhitneyOnPTMForm(MethodForm):
         initial=MultipleTestingCorrectionMethod.benjamini_hochberg,
     )
     alpha = CustomFloatField(
-        label="Error rate (alpha)", min_value=0, max_value=1, initial=0.05
+        label="Error rate (alpha)", min_value=0, max_value=1, step_size=0.01, initial=0.05
     )
     p_value_calculation_method = CustomChoiceField(
         choices=PValueCalculationMethod,
@@ -382,6 +382,36 @@ class DifferentialExpressionMannWhitneyOnPTMForm(MethodForm):
             )
 
 
+class DifferentialExpressionKruskalWallisOnIntensityForm(MethodForm):
+    is_dynamic = True
+
+    protein_df = CustomChoiceField(
+        choices=[], label="Step to use protein data from"
+    )
+    multiple_testing_correction_method = CustomChoiceField(
+        choices=MultipleTestingCorrectionMethod,
+        label="Multiple testing correction",
+        initial=MultipleTestingCorrectionMethod.benjamini_hochberg,
+    )
+    alpha = CustomFloatField(
+        label="Error rate (alpha)", min_value=0, max_value=1, step_size=0.01, initial=0.05
+    )
+
+    grouping = CustomChoiceField(choices=[], label="Grouping from metadata")
+    selected_groups = CustomMultipleChoiceField(
+        choices=[], label="Select groups to perform Kruskal-Wallis Test on"
+    )
+
+    def fill_form(self, run: Run) -> None:
+        self.fields["protein_df"].choices = fill_helper.get_choices_for_protein_df_steps(run)
+
+        self.fields["grouping"].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
+        grouping = self.data.get("grouping", self.fields["grouping"].choices[0][0])
+        self.fields["selected_groups"].choices = fill_helper.to_choices(
+            run.steps.metadata_df[grouping].unique()
+        )
+
+
 class DifferentialExpressionKruskalWallisOnPTMForm(MethodForm):
     is_dynamic = True
 
@@ -393,8 +423,8 @@ class DifferentialExpressionKruskalWallisOnPTMForm(MethodForm):
         label="Multiple testing correction",
         initial=MultipleTestingCorrectionMethod.benjamini_hochberg,
     )
-    alpha = CustomNumberField(
-        label="Error rate (alpha)", min_value=0, max_value=1, initial=0.05
+    alpha = CustomFloatField(
+        label="Error rate (alpha)", min_value=0, max_value=1, step_size=0.01, initial=0.05
     )
 
     grouping = CustomChoiceField(choices=[], label="Grouping from metadata")

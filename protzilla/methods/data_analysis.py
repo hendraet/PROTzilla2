@@ -7,7 +7,8 @@ from protzilla.data_analysis.clustering import (
     k_means,
 )
 from protzilla.data_analysis.differential_expression_anova import anova
-from protzilla.data_analysis.differential_expression_kruskal_wallis import kruskal_wallis_test_on_ptm_data
+from protzilla.data_analysis.differential_expression_kruskal_wallis import kruskal_wallis_test_on_ptm_data, \
+    kruskal_wallis_test_on_intensity_data
 from protzilla.data_analysis.differential_expression_linear_model import linear_model
 from protzilla.data_analysis.differential_expression_mann_whitney import (
     mann_whitney_test_on_intensity_data, mann_whitney_test_on_ptm_data)
@@ -161,7 +162,7 @@ class DifferentialExpressionMannWhitneyOnIntensity(DataAnalysisStep):
                           "The p-values are corrected for multiple testing.")
 
     input_keys = [
-        "intensity_df",
+        "protein_df",
         "metadata_df",
         "grouping",
         "group1",
@@ -182,8 +183,8 @@ class DifferentialExpressionMannWhitneyOnIntensity(DataAnalysisStep):
         return mann_whitney_test_on_intensity_data(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
-        if steps.get_step_output(Step, "protein_df", inputs["intensity_df"]) is not None:
-            inputs["intensity_df"] = steps.get_step_output(Step, "protein_df", inputs["intensity_df"])
+        if steps.get_step_output(Step, "protein_df", inputs["protein_df"]) is not None:
+            inputs["protein_df"] = steps.get_step_output(Step, "protein_df", inputs["protein_df"])
         inputs["metadata_df"] = steps.metadata_df
         inputs["log_base"] = steps.get_step_input(TransformationLog, "log_base")
         return inputs
@@ -219,6 +220,38 @@ class DifferentialExpressionMannWhitneyOnPTM(DataAnalysisStep):
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["ptm_df"] = steps.get_step_output(Step, "ptm_df", inputs["ptm_df"])
         inputs["metadata_df"] = steps.metadata_df
+        return inputs
+
+
+class DifferentialExpressionKruskalWallisOnIntensity(DataAnalysisStep):
+    display_name = "Kruskal-Wallis Test"
+    operation = "differential_expression"
+    method_description = ("A function to conduct a Kruskal-Wallis test between groups defined in the clinical data."
+                          "The p-values are corrected for multiple testing.")
+
+    input_keys = [
+        "protein_df",
+        "metadata_df",
+        "grouping",
+        "selected_groups",
+        "alpha",
+        "log_base",
+        "multiple_testing_correction_method",
+    ]
+    output_keys = [
+        "differentially_expressed_proteins_df",
+        "significant_proteins_df",
+        "corrected_p_values_df",
+        "corrected_alpha",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return kruskal_wallis_test_on_intensity_data(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["protein_df"] = steps.get_step_output(Step, "protein_df", inputs["protein_df"])
+        inputs["metadata_df"] = steps.metadata_df
+        inputs["log_base"] = steps.get_step_input(TransformationLog, "log_base")
         return inputs
 
 

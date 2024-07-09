@@ -10,7 +10,7 @@ from protzilla.utilities.transform_dfs import long_to_wide
 
 
 def mann_whitney_test_on_intensity_data(
-        intensity_df: pd.DataFrame,
+        protein_df: pd.DataFrame,
         metadata_df: pd.DataFrame,
         grouping: str,
         group1: str,
@@ -23,7 +23,7 @@ def mann_whitney_test_on_intensity_data(
     """
     Perform Mann-Whitney U test on all proteins in the given intensity data frame.
 
-    @param intensity_df: A protein dataframe in typical PROTzilla long format.
+    @param protein_df: A protein dataframe in typical PROTzilla long format.
     @param metadata_df: The metadata data frame containing the grouping information.
     @param grouping: The column name in the metadata data frame that contains the grouping information,
         that should be used.
@@ -45,7 +45,7 @@ def mann_whitney_test_on_intensity_data(
             (depending on the selected multiple testing correction method corrected_alpha may be equal to alpha)
         - a list messages (optional), containing messages for the user
     """
-    wide_df = long_to_wide(intensity_df)
+    wide_df = long_to_wide(protein_df)
 
     outputs = mann_whitney_test_on_columns(
         df=wide_df,
@@ -61,7 +61,7 @@ def mann_whitney_test_on_intensity_data(
     )
     differentially_expressed_proteins_df, significant_proteins_df = (
         merge_differential_expression_and_significant_df(
-            intensity_df=wide_df,
+            intensity_df=protein_df,
             diff_exp_df=outputs["differential_expressed_columns_df"],
             sig_df=outputs["significant_columns_df"]
         ))
@@ -75,6 +75,7 @@ def mann_whitney_test_on_intensity_data(
         corrected_alpha=outputs["corrected_alpha"],
         messages=outputs["messages"],
     )
+
 
 def mann_whitney_test_on_ptm_data(
         ptm_df: pd.DataFrame,
@@ -191,7 +192,8 @@ def mann_whitney_test_on_columns(
     for column in data_columns:
         group1_data = df_with_groups[df_with_groups[grouping] == group1][column]
         group2_data = df_with_groups[df_with_groups[grouping] == group2][column]
-        u_statistic, p_value = stats.mannwhitneyu(group1_data, group2_data, alternative="two-sided", method=p_value_calculation_method)
+        u_statistic, p_value = stats.mannwhitneyu(group1_data, group2_data, alternative="two-sided",
+                                                  method=p_value_calculation_method)
 
         if not np.isnan(p_value):
             log2_fold_change = (
