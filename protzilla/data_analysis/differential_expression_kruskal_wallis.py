@@ -173,7 +173,11 @@ def kruskal_wallis_test_on_columns(
             all_group_data.append(
                 df_with_groups[df_with_groups[grouping] == group][column]
             )
-        h_statistic, p_value = stats.kruskal(*all_group_data)
+        try:
+            h_statistic, p_value = stats.kruskal(*all_group_data)
+        except ValueError:
+            invalid_columns.append(column)
+            continue
 
         if not np.isnan(p_value):
             valid_columns.append(column)

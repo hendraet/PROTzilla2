@@ -64,28 +64,28 @@ def preprocess_grouping(
 
     # Check if the selected groups are present in the metadata_df
     removed_groups = []
-    if len(selected_groups) >= 2:
-        for group in selected_groups:
-            if group not in metadata_df[grouping].unique():
-                removed_groups.append(group)
+    for group in selected_groups:
+        if group not in metadata_df[grouping].unique():
+            selected_groups.remove(group)
+            removed_groups.append(group)
     if removed_groups:
         messages.append(
             {
                 "level": logging.WARNING,
                 "msg": f"Group{'s' if len(removed_groups) > 1 else ''} "
-                       f"{removed_groups} were not found in metadata_df and thus removed.",
+                       f"{str(removed_groups)[1:-1]} were not found in metadata_df and thus removed.",
             }
         )
 
     # Select all groups if none or less than two were selected
-    if not selected_groups or isinstance(selected_groups, str):
+    if not selected_groups or isinstance(selected_groups, str) or len(selected_groups) < 2:
         selected_groups = metadata_df[grouping].unique()
-        selected_groups_str = "".join([" " + str(group) for group in selected_groups])
+        selected_groups_str = "".join(["\'" + str(group) + "\', " for group in selected_groups])[0:-2]
         messages.append(
             {
                 "level": logging.WARNING,
                 "msg": f"Auto-selected the groups {selected_groups_str} for comparison, "
-                       f"because none or only one group was selected.",
+                       f"because none or only one {'valid ' if removed_groups else ''}group was selected.",
             }
         )
 
