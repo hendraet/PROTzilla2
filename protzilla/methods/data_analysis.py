@@ -7,6 +7,7 @@ from protzilla.data_analysis.clustering import (
     k_means,
 )
 from protzilla.data_analysis.differential_expression_anova import anova
+from protzilla.data_analysis.differential_expression_kruskal_wallis import kruskal_wallis_test_on_ptm_data
 from protzilla.data_analysis.differential_expression_linear_model import linear_model
 from protzilla.data_analysis.differential_expression_mann_whitney import (
     mann_whitney_test_on_intensity_data, mann_whitney_test_on_ptm_data)
@@ -214,6 +215,36 @@ class DifferentialExpressionMannWhitneyOnPTM(DataAnalysisStep):
 
     def method(self, inputs: dict) -> dict:
         return mann_whitney_test_on_ptm_data(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["ptm_df"] = steps.get_step_output(Step, "ptm_df", inputs["ptm_df"])
+        inputs["metadata_df"] = steps.metadata_df
+        return inputs
+
+
+class DifferentialExpressionKruskalWallisOnPTM(DataAnalysisStep):
+    display_name = "Kruskal-Wallis Test"
+    operation = "Peptide analysis"
+    method_description = ("A function to conduct a Kruskal-Wallis test between groups defined in the clinical data."
+                          "The p-values are corrected for multiple testing.")
+
+    input_keys = [
+        "ptm_df",
+        "metadata_df",
+        "grouping",
+        "selected_groups",
+        "alpha",
+        "multiple_testing_correction_method",
+    ]
+    output_keys = [
+        "differentially_expressed_ptm_df",
+        "significant_ptm_df",
+        "corrected_p_values_df",
+        "corrected_alpha",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return kruskal_wallis_test_on_ptm_data(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["ptm_df"] = steps.get_step_output(Step, "ptm_df", inputs["ptm_df"])
