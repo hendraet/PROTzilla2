@@ -29,6 +29,31 @@ def long_to_wide(intensity_df: pd.DataFrame, value_name: str = None):
     intensity_df = intensity_df.fillna(intensity_df.mean())
     return intensity_df
 
+def long_to_wide_retention_time(intensity_df: pd.DataFrame, value_name: str = None):
+    """
+    This function transforms the dataframe to a wide format that
+    can be more easily handled by packages such as sklearn.
+    Each sample gets one row with all observations as columns.
+
+    :param intensity_df: the dataframe that should be transformed into
+        long format
+        :type intensity_df: pd.DataFrame
+
+    :return: returns dataframe in wide format suitable for use by
+        packages such as sklearn
+    :rtype: pd.DataFrame
+    """
+
+    if intensity_df.duplicated(subset=["Sample", "Protein ID"]).any():
+        intensity_df = intensity_df.groupby(["Sample", "Protein ID"]).mean().reset_index()
+        intensity_df = intensity_df.dropna()
+
+    values_name = 'Retention time'
+    intensity_df = pd.pivot(
+        intensity_df, index="Sample", columns="Protein ID", values=values_name
+    )
+    intensity_df = intensity_df.fillna(intensity_df.mean())
+    return intensity_df
 
 def wide_to_long(wide_df: pd.DataFrame, original_long_df: pd.DataFrame):
     """

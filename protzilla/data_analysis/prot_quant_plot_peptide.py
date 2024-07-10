@@ -23,7 +23,7 @@ def prot_quant_plot_peptide(
 ) -> dict:
     """
     A function to create a graph visualising protein quantifications across all samples
-    as a line diagram using retention time and intensity. It's possible to select one proteingroup
+    as a line diagram using retention time. It's possible to select one proteingroup
     that will be displayed in orange and choose a similarity measurement with a similarity score
     to get all proteingroups that are similar displayed in another color in this line diagram.
     All other proteingroups are displayed in the background as a grey polygon.
@@ -37,12 +37,9 @@ def prot_quant_plot_peptide(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
-    # Ensure the dataframe includes retention time
-    if 'Retention time' not in input_df.columns:
-        raise ValueError("The input dataframe must include a 'Retention time' column.")
-
     wide_df = input_df.interpolate(method='linear', axis=0)
     wide_df = long_to_wide_retention_time(wide_df) if is_long_format(wide_df) else  wide_df
+
 
     if protein_group not in wide_df.columns:
         raise ValueError("Please select a valid protein group.")
@@ -65,15 +62,15 @@ def prot_quant_plot_peptide(
     lower_upper_x = []
     lower_upper_y = []
 
-    lower_upper_x.append(wide_df['Retention time'].iloc[0])
+    lower_upper_x.append(wide_df.index[0])
     lower_upper_y.append(wide_df.iloc[0].min())
 
     for index, row in wide_df.iterrows():
-        lower_upper_x.append(row['Retention time'])
+        lower_upper_x.append(index)
         lower_upper_y.append(row.max())
 
     for index, row in reversed(list(wide_df.iterrows())):
-        lower_upper_x.append(row['Retention time'])
+        lower_upper_x.append(index)
         lower_upper_y.append(row.min())
 
     fig.add_trace(
@@ -81,14 +78,14 @@ def prot_quant_plot_peptide(
             x=lower_upper_x,
             y=lower_upper_y,
             fill="toself",
-            name="Intensity Range",
+            name="Retention time of all protein groups",
             line=dict(color="silver"),
         )
     )
 
     similar_groups = []
     for group_to_compare in wide_df.columns:
-        if group_to_compare not in ['Retention time', protein_group]:
+        if group_to_compare != protein_group:
             if similarity_measure == "euclidean distance":
                 distance = euclidean_distances(
                     stats.zscore(wide_df[protein_group]).values.reshape(1, -1),
@@ -109,7 +106,7 @@ def prot_quant_plot_peptide(
     for group in similar_groups:
         fig.add_trace(
             go.Scatter(
-                x=wide_df['Retention time'],
+                x=wide_df.index,
                 y=wide_df[group],
                 mode="lines",
                 name=group[:15] + "..." if len(group) > 15 else group,
@@ -134,7 +131,7 @@ def prot_quant_plot_peptide(
     )
     fig.add_trace(
         go.Scatter(
-            x=wide_df['Retention time'],
+            x=wide_df.index,
             y=wide_df[protein_group],
             mode="lines",
             name=formatted_protein_name,
@@ -163,22 +160,22 @@ def prot_quant_plot_peptide(
     )
 
     fig.update_layout(
-        title=f"Intensity of {formatted_protein_name} across retention time",
+        title=f"Retention time of {formatted_protein_name} in all samples",
         plot_bgcolor=colors["plot_bgcolor"],
         xaxis_gridcolor=colors["gridcolor"],
         yaxis_gridcolor=colors["gridcolor"],
         xaxis_linecolor=colors["linecolor"],
         yaxis_linecolor=colors["linecolor"],
-        xaxis_title="Retention Time",
-        yaxis_title="Intensity",
+        xaxis_title="Sample",
+        yaxis_title="Retention time",
         legend_title="Legend",
         xaxis=dict(
             tickmode="array",
             tickangle=0,
-            tickvals=sorted(wide_df['Retention time']),
+            tickvals=wide_df.index,
             ticktext=[
                 f"<span style='font-size: 10px; color:{color_mapping.get(label[0], 'black')}'><b>•</b></span>"
-                for label in wide_df['Retention time']
+                for label in wide_df.index
             ],
         ),
         autosize=True,
