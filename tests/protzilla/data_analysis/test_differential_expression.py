@@ -535,27 +535,27 @@ def test_differential_expression_kruskal_wallis_on_intensity_group_handling(
 @pytest.fixture
 def ptm_test_data():
     test_amount_list = (
-        ["Sample1", 1, 1, 10, 1, 100],
-        ["Sample2", 2, 2, 10, 1, 100],
-        ["Sample3", 3, 3, 10, 1, 100],
-        ["Sample4", 4, 4, 10, 1, 100],
-        ["Sample5", 5, 5, 10, 1, 100],
-        ["Sample6", 6, 3, 11, 111, 100],
-        ["Sample7", 7, 4, 12, 222, 100],
-        ["Sample8", 8, 5, 13, 333, 100],
-        ["Sample9", 9, 6, 14, 444, 100],
-        ["Sample10", 10, 7, 15, 555, 100],
-        ["Sample11", 11, 5, 16, 1111, 100],
-        ["Sample12", 12, 6, 17, 2222, 100],
-        ["Sample13", 13, 7, 18, 3333, 100],
-        ["Sample14", 14, 8, 19, 4444, 100],
-        ["Sample15", 15, 9, 20, 5555, 100],
+        ["Sample1", 1, 1, 10, 1, 100, 100],
+        ["Sample2", 2, 2, 10, 1, 100, 100],
+        ["Sample3", 3, 3, 10, 1, 100, 100],
+        ["Sample4", 4, 4, 10, 1, 100, 100],
+        ["Sample5", 5, 5, 10, 1, 100, 100],
+        ["Sample6", 6, 3, 11, 111, 100, 100],
+        ["Sample7", 7, 4, 12, 222, 100, 100],
+        ["Sample8", 8, 5, 13, 333, 100, 100],
+        ["Sample9", 9, 6, 14, 444, 100, 100],
+        ["Sample10", 10, 7, 15, 555, 100, 100],
+        ["Sample11", 11, 5, 16, 1111, 100, 100],
+        ["Sample12", 12, 6, 17, 2222, 100, 100],
+        ["Sample13", 13, 7, 18, 3333, 100, 100],
+        ["Sample14", 14, 8, 19, 4444, 100, 100],
+        ["Sample15", 15, 9, 20, 5555, 100, 100],
 
 
     )
     test_amount_df = pd.DataFrame(
         data=test_amount_list,
-        columns=["Sample", "Oxidation", "Acetyl", "GlyGly", "Phospho", "Unmodified"],
+        columns=["Sample", "Oxidation", "Acetyl", "GlyGly", "Phospho", "Unmodified", "Peptides"],
     )
 
     test_metadata_list = (

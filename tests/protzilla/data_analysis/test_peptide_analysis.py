@@ -20,11 +20,12 @@ def test_filter_peptides_of_protein(peptides_df, evidence_peptide_df, df_num):
 def test_ptms_per_sampel(evidence_peptide_df):
     ptm_df = ptms_per_sample(evidence_peptide_df)["ptm_df"]
 
-    assert ptm_df.columns.tolist() == ["Sample", "Acetyl (Protein N-term)", "Oxidation (M)", "Unmodified"]
+    assert ptm_df.columns.tolist() == ["Sample", "Acetyl (Protein N-term)", "Oxidation (M)", "Unmodified", "Peptides"]
     assert ptm_df["Sample"].tolist() == ["Sample1", "Sample2", "Sample3", "Sample4"]
     assert ptm_df["Unmodified"].tolist() == [7, 4, 5, 4]
     assert ptm_df["Acetyl (Protein N-term)"].tolist() == [2, 1, 0, 0]
     assert ptm_df["Oxidation (M)"].tolist() == [1, 0, 0, 0]
+    assert ptm_df["Peptides"].tolist() == [9, 5, 5, 4]
 
 
 def test_ptms_per_protein_and_sample(evidence_peptide_df):
