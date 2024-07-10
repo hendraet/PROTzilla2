@@ -1,7 +1,7 @@
-import json
 import logging
 from enum import Enum
 
+import django.forms as forms
 from django.forms import (
     BooleanField,
     CharField,
@@ -129,14 +129,30 @@ class CustomFloatField(FloatField):
         self.widget.attrs.update({"class": "form-control mb-2"})
 
 
-class CustomInformedChoiceField(CustomChoiceField):
-    def __init__(self, choices: Enum | list, initial=None, *args, **kwargs):
-        self.info = kwargs.pop("info", {})
-        super().__init__(choices, initial, *args, **kwargs)
+from django import forms
+from django.utils.safestring import mark_safe
 
-    def widget_attrs(self, widget):
-        attrs = super().widget_attrs(widget)
-        json_data = json.dumps(self.info)
-        attrs["data-info"] = json_data
-        attrs["id"] = "custom_informed_choice_field"
-        return attrs
+
+class TextDisplayWidget(forms.Widget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attrs.update()
+
+    def render(self, name, value, attrs=None, renderer=None):
+        display_text = self.attrs.get("data-display-text", "")
+        return mark_safe(f"<div class=form-control mb-2>{display_text}</div>")
+
+
+class TextDisplayField(forms.Field):
+    widget = TextDisplayWidget
+
+    def __init__(self, *args, **kwargs):
+        self.text = kwargs.pop("text", "")
+        kwargs["required"] = False
+        super().__init__(*args, **kwargs)
+        self.update_text()
+
+    def update_text(self, text=None):
+        if text is not None:
+            self.text = text
+        self.widget.attrs["data-display-text"] = self.text

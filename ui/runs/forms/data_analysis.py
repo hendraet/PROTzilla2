@@ -1,6 +1,6 @@
 from enum import Enum, StrEnum
 
-import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils
+import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils as spu
 from protzilla.methods.data_analysis import (
     DataAnalysisStep,
     DifferentialExpressionLinearModel,
@@ -20,9 +20,9 @@ from .custom_fields import (
     CustomCharField,
     CustomChoiceField,
     CustomFloatField,
-    CustomInformedChoiceField,
     CustomMultipleChoiceField,
     CustomNumberField,
+    TextDisplayField,
 )
 
 
@@ -989,49 +989,54 @@ class ProteinGraphVariationGraphForm(MethodForm):
 
 
 class PredictSpectraForm(MethodForm):
-    model_name = CustomInformedChoiceField(
-        choices=fill_helper.to_choices(
-            protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
-        ),
+    is_dynamic = True
+    model_name = CustomChoiceField(
+        choices=fill_helper.to_choices(spu.MODEL_METADATA.keys()),
         label="Choose the Prosit model to predict with",
-        info={
-            model_name: protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.format_citation(
-                model_name
-            )
-            for model_name in protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
-        },
     )
+    model_info = TextDisplayField(
+        label="Model info", text=""
+    )  # we dynamically fill this in fill_form
     output_format = CustomChoiceField(
-        choices=fill_helper.to_choices(
-            protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.AVAILABLE_FORMATS
-        ),
+        choices=fill_helper.to_choices(spu.AVAILABLE_FORMATS),
         label="The format of the output file",
     )
-    normalized_collision_energy = (
-        CustomNumberField(  # TODO this should only be shown model is not CID
-            label="Normalized collision energy",
-            min_value=30,
-            max_value=100,
-            step_size=1,
-            initial=30,
-        )
+    normalized_collision_energy = CustomNumberField(
+        label="Normalized collision energy",
+        min_value=1,
+        max_value=1000,
+        step_size=1,
+        initial=30,
     )
 
-    fragmentation_type = CustomChoiceField(  # TODO this should only be shown when model is TMT
+    fragmentation_type = CustomChoiceField(
         label="Fragmentation type",
         choices=fill_helper.to_choices(
             [
-                protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.FRAGMENTATION_TYPE.CID,
-                protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.FRAGMENTATION_TYPE.HCD,
+                spu.FRAGMENTATION_TYPE.CID,
+                spu.FRAGMENTATION_TYPE.HCD,
             ]
         ),
     )
-    csv_seperator = (
-        CustomChoiceField(  # TOOD this should only be shown if output_format is csv
-            label="CSV seperator",
-            choices=fill_helper.to_choices([",", ";", r"\t"]),
-        )
+    csv_seperator = CustomChoiceField(
+        label="CSV seperator",
+        choices=fill_helper.to_choices([",", ";", r"\t"]),
     )
+
+    def fill_form(self, run: Run) -> None:
+        current_model = self.get_field("model_name")
+        current_output_format = self.get_field("output_format")
+        show_nce = current_model != spu.AVAILABLE_MODELS.PrositIntensityCID
+        show_fragmentation_type = (
+            current_model == spu.AVAILABLE_MODELS.PrositIntensityTMT
+        )
+        show_csv_seperator = current_output_format == spu.AVAILABLE_FORMATS.CSV
+        self.fields["model_info"].update_text(
+            spu.formatted_citation_dict[current_model]
+        )
+        self.toggle_visibility("normalized_collision_energy", show_nce)
+        self.toggle_visibility("fragmentation_type", show_fragmentation_type)
+        self.toggle_visibility("csv_seperator", show_csv_seperator)
 
 
 class PlotPredictedSpectraForm(MethodForm):

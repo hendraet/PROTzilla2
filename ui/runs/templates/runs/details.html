@@ -12,22 +12,6 @@
 
     <script src="https://unpkg.com/htmx.org@1.9.11" integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0" crossorigin="anonymous"></script>
     {# TODO 129 Better buttons for analysis and importing #}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // TODO maybe we want to use multiple of those fields at once, this will need to be adjusted to handle multiple then
-            var select = document.querySelector('#custom_informed_choice_field');
-            var infoDiv = document.createElement('div');
-            infoDiv.classList.add('form-control');
-            select.parentNode.insertBefore(infoDiv, select.nextSibling);
-            var info = JSON.parse(select.getAttribute('data-info'));
-
-            select.addEventListener('change', function () {
-                infoDiv.innerHTML = info[this.value] || '';
-            });
-            //// Trigger change event to show initial info
-            select.dispatchEvent(new Event('change'));
-        });
-    </script>
 
 {% endblock %}
 

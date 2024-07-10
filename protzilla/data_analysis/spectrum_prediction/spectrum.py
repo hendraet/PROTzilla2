@@ -10,8 +10,8 @@ from tqdm import tqdm
 
 from protzilla.constants.protzilla_logging import logger
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
-    AVAILABLE_MODELS,
     DATA_KEYS,
+    MODEL_METADATA,
     OUTPUT_KEYS,
 )
 from protzilla.disk_operator import FileOutput
@@ -324,9 +324,9 @@ class KoinaModel(SpectrumPredictor):
 class SpectrumPredictorFactory:
     @staticmethod
     def create_predictor(model_name: str) -> KoinaModel:
-        if model_name not in AVAILABLE_MODELS:
+        if model_name not in MODEL_METADATA:
             raise ValueError(f"Model '{model_name}' is not available.")
-        return KoinaModel(**AVAILABLE_MODELS[model_name])
+        return KoinaModel(**MODEL_METADATA[model_name])
 
 
 class SpectrumExporter:
