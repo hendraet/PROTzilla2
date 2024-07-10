@@ -21,13 +21,13 @@ from protzilla.data_analysis.plots import (
     prot_quant_plot,
     scatter_plot,
 )
+from protzilla.data_analysis.predict_spectra import plot_spectrum, predict
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
 from protzilla.data_analysis.ptm_analysis import (
     filter_peptides_of_protein,
     ptms_per_protein_and_sample,
     ptms_per_sample,
 )
-from protzilla.data_analysis.spectrum_prediction import plot_spectrum, predict
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
 
@@ -744,7 +744,14 @@ class PredictSpectra(DataAnalysisStep):
     operation = "spectrum_prediction"
     method_description = "Predict the MS/MS spectra of a list of peptides using different models. The models are trained on experimental data and predict the intensity of the fragment ions"
 
-    input_keys = ["peptide_df", "model_name", "output_format"]
+    input_keys = [
+        "peptide_df",
+        "model_name",
+        "output_format",
+        "normalized_collision_energy",
+        "fragmentation_type",
+        "csv_seperator",
+    ]
     output_keys = ["predicted_spectra_df", "predicted_spectra"]
 
     def method(self, inputs: dict) -> dict:

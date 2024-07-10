@@ -5,12 +5,15 @@ import pandas as pd
 import pytest
 
 from protzilla.constants.paths import PEPTIDE_TEST_DATA_PATH
-from protzilla.data_analysis.spectrum_prediction import (
+from protzilla.data_analysis.spectrum_prediction.spectrum import (
     KoinaModel,
     Spectrum,
     SpectrumExporter,
 )
-from protzilla.data_analysis.spectrum_prediction_utils import DATA_KEYS, OUTPUT_KEYS
+from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
+    DATA_KEYS,
+    OUTPUT_KEYS,
+)
 from protzilla.methods.data_analysis import PredictSpectra
 from protzilla.methods.importing import EvidenceImport
 
@@ -77,9 +80,9 @@ def prediction_df_ready_for_request():
     return pd.DataFrame(
         {
             DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
-            DATA_KEYS.PRECURSOR_CHARGES: [1, 2],
-            DATA_KEYS.COLLISION_ENERGIES: [30, 30],
-            DATA_KEYS.FRAGMENTATION_TYPES: ["HCD", "HCD"],
+            DATA_KEYS.PRECURSOR_CHARGE: [1, 2],
+            DATA_KEYS.COLLISION_ENERGY: [30, 30],
+            DATA_KEYS.FRAGMENTATION_TYPE: ["HCD", "HCD"],
         }
     )
 
@@ -127,7 +130,13 @@ def prediction_df_high_charge():
 
 def test_spectrum_prediction(spectrum_prediction_run):
     spectrum_prediction_run.step_calculate(
-        {"model_name": "PrositIntensityHCD", "output_format": "msp"}
+        {
+            "model_name": "PrositIntensityHCD",
+            "output_format": "msp",
+            "normalized_collision_energy": 30,
+            "fragmentation_type": "HCD",
+            "csv_seperator": ",",
+        }
     )
     assert "predicted_spectra_df" in spectrum_prediction_run.current_outputs
     return
@@ -137,7 +146,13 @@ def test_spectrum_prediction_with_invalid_peptides(
     spectrum_prediction_run_bad_evidence,
 ):
     spectrum_prediction_run_bad_evidence.step_calculate(
-        {"model_name": "PrositIntensityHCD", "output_format": "msp"}
+        {
+            "model_name": "PrositIntensityHCD",
+            "output_format": "msp",
+            "normalized_collision_energy": 30,
+            "fragmentation_type": "HCD",
+            "csv_seperator": ",",
+        }
     )
     assert (
         "predicted_spectra_df" in spectrum_prediction_run_bad_evidence.current_outputs
@@ -149,9 +164,9 @@ def test_preprocess_renames_columns_correctly(prediction_df_complete):
     model = KoinaModel(
         required_keys=[
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.FRAGMENTATION_TYPES,
-            DATA_KEYS.COLLISION_ENERGIES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.FRAGMENTATION_TYPE,
+            DATA_KEYS.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -164,9 +179,9 @@ def test_preprocess_removes_not_required_columns(prediction_df_complete):
     model = KoinaModel(
         required_keys=[
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.FRAGMENTATION_TYPES,
-            DATA_KEYS.COLLISION_ENERGIES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.FRAGMENTATION_TYPE,
+            DATA_KEYS.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -180,9 +195,9 @@ def test_preprocess_filters_out_high_charge_peptides(prediction_df_high_charge):
     model = KoinaModel(
         required_keys=[
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.FRAGMENTATION_TYPES,
-            DATA_KEYS.COLLISION_ENERGIES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.FRAGMENTATION_TYPE,
+            DATA_KEYS.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -195,9 +210,9 @@ def test_preprocess_filters_out_peptides_with_ptms(prediction_df_ptms):
     model = KoinaModel(
         required_keys=[
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.FRAGMENTATION_TYPES,
-            DATA_KEYS.COLLISION_ENERGIES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.FRAGMENTATION_TYPE,
+            DATA_KEYS.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -208,7 +223,7 @@ def test_preprocess_filters_out_peptides_with_ptms(prediction_df_ptms):
 
 def test_dataframe_verification_passes_with_required_keys(prediction_df_complete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGES], url=""
+        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
     )
     model.prediction_df = prediction_df_complete
     model.preprocess()
@@ -219,7 +234,7 @@ def test_dataframe_verification_raises_error_when_key_missing(prediction_df_comp
     model = KoinaModel(
         required_keys=[
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
+            DATA_KEYS.PRECURSOR_CHARGE,
             "MissingKey",
         ],
         url="",
@@ -230,7 +245,7 @@ def test_dataframe_verification_raises_error_when_key_missing(prediction_df_comp
 
 def test_slice_dataframe_returns_correct_slices(prediction_df_incomplete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGES], url=""
+        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
     )
     model.load_prediction_df(prediction_df_incomplete)
     slices = model.slice_dataframe()
@@ -241,7 +256,7 @@ def test_slice_dataframe_returns_correct_slices_for_large_dataframe(
     prediction_df_large,
 ):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGES], url=""
+        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
     )
     model.load_prediction_df(prediction_df_large)
     slices = model.slice_dataframe()
@@ -252,7 +267,7 @@ def test_slice_dataframe_returns_correct_slices_for_large_dataframe(
 
 def test_format_dataframes_returns_correct_output(prediction_df_complete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGES], url=""
+        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
     )
     model.load_prediction_df(prediction_df_complete)
     slices = model.slice_dataframe()
@@ -262,7 +277,7 @@ def test_format_dataframes_returns_correct_output(prediction_df_complete):
 
 def test_format_for_request(prediction_df_ready_for_request):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGES], url=""
+        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
     )
     formatted_data = model.format_for_request(prediction_df_ready_for_request)
     assert formatted_data is not None
@@ -276,12 +291,12 @@ def test_format_for_request(prediction_df_ready_for_request):
 
 def test_load_prediction_df():
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGES], url=""
+        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
     )
     df = pd.DataFrame(
         {
             DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
-            DATA_KEYS.PRECURSOR_CHARGES: [1, 2],
+            DATA_KEYS.PRECURSOR_CHARGE: [1, 2],
         }
     )
     model.load_prediction_df(df)
@@ -326,7 +341,7 @@ def test_extract_fragment_information_handles_mixed_annotations():
 
 def test_create_spectrum_with_valid_data():
     row = pd.Series(
-        {DATA_KEYS.PEPTIDE_SEQUENCE: "PEPTIDE", DATA_KEYS.PRECURSOR_CHARGES: 2}
+        {DATA_KEYS.PEPTIDE_SEQUENCE: "PEPTIDE", DATA_KEYS.PRECURSOR_CHARGE: 2}
     )
     prepared_data = {
         OUTPUT_KEYS.MZ_VALUES: np.array([[100, 200, 300]]),
@@ -340,7 +355,7 @@ def test_create_spectrum_with_valid_data():
 
     assert isinstance(spectrum, Spectrum)
     assert spectrum.peptide_sequence == "PEPTIDE"
-    assert spectrum.peptide_charge == 2
+    assert spectrum.precursor_charge == 2
     assert np.array_equal(
         spectrum.spectrum["m/z"].values, prepared_data[OUTPUT_KEYS.MZ_VALUES][index]
     )
@@ -372,12 +387,6 @@ def test_create_spectrum_with_missing_data():
 
     with pytest.raises(ValueError):
         KoinaModel.create_spectrum(row, prepared_data, index)
-
-
-import pandas as pd
-import pytest
-
-from protzilla.data_analysis.spectrum_prediction import OUTPUT_KEYS, SpectrumExporter
 
 
 def test_peak_annotation_with_valid_data():

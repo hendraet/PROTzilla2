@@ -1,6 +1,6 @@
 from enum import Enum, StrEnum
 
-import protzilla.data_analysis.spectrum_prediction_utils
+import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils
 from protzilla.methods.data_analysis import (
     DataAnalysisStep,
     DifferentialExpressionLinearModel,
@@ -991,21 +991,46 @@ class ProteinGraphVariationGraphForm(MethodForm):
 class PredictSpectraForm(MethodForm):
     model_name = CustomInformedChoiceField(
         choices=fill_helper.to_choices(
-            protzilla.data_analysis.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
+            protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
         ),
         label="Choose the Prosit model to predict with",
         info={
-            model_name: protzilla.data_analysis.spectrum_prediction_utils.format_citation(
+            model_name: protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.format_citation(
                 model_name
             )
-            for model_name in protzilla.data_analysis.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
+            for model_name in protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.AVAILABLE_MODELS.keys()
         },
     )
     output_format = CustomChoiceField(
         choices=fill_helper.to_choices(
-            protzilla.data_analysis.spectrum_prediction_utils.AVAILABLE_FORMATS
+            protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.AVAILABLE_FORMATS
         ),
         label="The format of the output file",
+    )
+    normalized_collision_energy = (
+        CustomNumberField(  # TODO this should only be shown model is not CID
+            label="Normalized collision energy",
+            min_value=30,
+            max_value=100,
+            step_size=1,
+            initial=30,
+        )
+    )
+
+    fragmentation_type = CustomChoiceField(  # TODO this should only be shown when model is TMT
+        label="Fragmentation type",
+        choices=fill_helper.to_choices(
+            [
+                protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.FRAGMENTATION_TYPE.CID,
+                protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils.FRAGMENTATION_TYPE.HCD,
+            ]
+        ),
+    )
+    csv_seperator = (
+        CustomChoiceField(  # TOOD this should only be shown if output_format is csv
+            label="CSV seperator",
+            choices=fill_helper.to_choices([",", ";", r"\t"]),
+        )
     )
 
 

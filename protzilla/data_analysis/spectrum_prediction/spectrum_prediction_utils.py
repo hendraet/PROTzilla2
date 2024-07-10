@@ -19,13 +19,23 @@ class FRAGMENTATION_TYPE(StrEnum):
 
 
 class DATA_KEYS(StrEnum):
+    """Commonly used keys in the dataframes."""
+
     PEPTIDE_SEQUENCE = "peptide_sequences"
-    PRECURSOR_CHARGES = "precursor_charges"
-    COLLISION_ENERGIES = "collision_energies"
-    FRAGMENTATION_TYPES = "fragmentation_types"
+    PRECURSOR_CHARGE = "precursor_charges"
+    PEPTIDE_MZ = "peptide_m/z"
+    MZ = "m/z"
+    COLLISION_ENERGY = "collision_energies"
+    FRAGMENTATION_TYPE = "fragmentation_type"
+    # These are used for the peaks
+    INTENSITY = "intensity"
+    FRAGMENT_TYPE = "fragment_type"
+    FRAGMENT_CHARGE = "fragment_charge"
 
 
 class OUTPUT_KEYS(StrEnum):
+    """These are the keys that are that are returned from the API"""
+
     MZ_VALUES = "mz"
     INTENSITY_VALUES = "intensities"
     ANNOTATIONS = "annotation"
@@ -40,8 +50,8 @@ AVAILABLE_MODELS = {
         "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.COLLISION_ENERGIES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.COLLISION_ENERGY,
         ],
     },
     "PrositIntensityCID": {
@@ -50,7 +60,7 @@ AVAILABLE_MODELS = {
         "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
+            DATA_KEYS.PRECURSOR_CHARGE,
         ],
     },
     "PrositIntensityTimsTOF": {
@@ -59,8 +69,8 @@ AVAILABLE_MODELS = {
         "github_url": None,
         "required_keys": [
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.COLLISION_ENERGIES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.COLLISION_ENERGY,
         ],
     },
     "PrositIntensityTMT": {
@@ -69,9 +79,9 @@ AVAILABLE_MODELS = {
         "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
             DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGES,
-            DATA_KEYS.COLLISION_ENERGIES,
-            DATA_KEYS.FRAGMENTATION_TYPES,
+            DATA_KEYS.PRECURSOR_CHARGE,
+            DATA_KEYS.COLLISION_ENERGY,
+            DATA_KEYS.FRAGMENTATION_TYPE,
         ],
     },
 }
