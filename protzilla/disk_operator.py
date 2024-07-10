@@ -75,6 +75,21 @@ class OutputFileOperator:
             with open(file_path, "w") as file:
                 file.write(data)
 
+    @staticmethod
+    def read(file_path: Path | str):
+        with ErrorHandler():
+            if isinstance(file_path, str):
+                file_path = Path(file_path)
+
+            with open(file_path, "r") as file:
+                logger.info(f"Reading file output from {file_path}")
+                content = file.read()
+                return FileOutput(
+                    base_file_name=file_path.stem,
+                    file_extension=file_path.suffix,
+                    content=content,
+                )
+
 
 class DataFrameOperator:
     @staticmethod
@@ -264,6 +279,8 @@ class DiskOperator:
                     and Path(value).suffix == ".csv"
                 ):
                     step_output[key] = self.dataframe_operator.read(value)
+                elif isinstance(value, str) and Path(value).exists():
+                    step_output[key] = self.outputfile_operator.read(value)
                 else:
                     step_output[key] = value
             return Output(step_output)
