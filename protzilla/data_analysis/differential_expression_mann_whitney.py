@@ -5,7 +5,7 @@ import pandas as pd
 from scipy import stats
 
 from protzilla.data_analysis.differential_expression_helper import _map_log_base, apply_multiple_testing_correction, \
-    merge_differential_expression_and_significant_df
+    merge_differential_expression_and_significant_df, normalize_ptm_df
 from protzilla.utilities.transform_dfs import long_to_wide
 
 
@@ -111,8 +111,11 @@ def mann_whitney_test_on_ptm_data(
         - a float corrected_alpha, containing the alpha value after application of multiple testing correction (depending on the selected multiple testing correction method corrected_alpha may be equal to alpha),
         - a list messages, containing messages for the user
     """
+
+    normalized_ptm_df = normalize_ptm_df(ptm_df)
+
     output = mann_whitney_test_on_columns(
-        df=ptm_df,
+        df=normalized_ptm_df,
         metadata_df=metadata_df,
         grouping=grouping,
         group1=group1,
