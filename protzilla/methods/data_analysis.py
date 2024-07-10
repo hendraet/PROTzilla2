@@ -809,13 +809,11 @@ class TimeSeriesLinearRegression(PlotStep):
         "input_df",
         "metadata_df",
         "protein_group",
+        "grouping",
         "test_size",
     ]
     output_keys = [
-        "train_root_mean_squared",
-        "test_root_mean_squared",
-        "train_r2_score",
-        "test_r2_score",
+        "scores",
     ]
 
     def method(self, inputs: dict) -> dict:
@@ -836,13 +834,11 @@ class TimeSeriesRANSACRegression(PlotStep):
         "input_df",
         "metadata_df",
         "protein_group",
+        "grouping",
         "test_size",
     ]
     output_keys = [
-        "train_root_mean_squared",
-        "test_root_mean_squared",
-        "train_r2_score",
-        "test_r2_score",
+        "scores",
     ]
     def method(self, inputs: dict) -> dict:
         return time_series_ransac_regression(**inputs)

@@ -145,6 +145,10 @@ class DimensionReductionMetric(Enum):
     cosine = "cosine"
     havensine = "havensine"
 
+class TimeSeriesGrouping(Enum):
+    with_grouping = "With Grouping"
+    without_grouping = "Without Grouping"
+
 
 class DifferentialExpressionANOVAForm(MethodForm):
     is_dynamic = True
@@ -1224,6 +1228,11 @@ class TimeSeriesLinearRegressionForm(MethodForm):
         choices=[],
         label="Protein group: which protein group to perform the linear regression on",
     )
+    grouping = CustomChoiceField(
+        choices= TimeSeriesGrouping,
+        label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
+        initial=TimeSeriesGrouping.with_grouping
+    )
     test_size = CustomFloatField(
         label="Test size: proportion of the dataset to include in the test split",
         min_value=0,
@@ -1259,6 +1268,11 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
     protein_group = CustomChoiceField(
         choices=[],
         label="Protein group: which protein group to perform the RANSAC regression on",
+    )
+    grouping = CustomChoiceField(
+        choices= TimeSeriesGrouping,
+        label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
+        initial=TimeSeriesGrouping.with_grouping
     )
     test_size = CustomFloatField(
         label="Test size: proportion of the dataset to include in the test split",
