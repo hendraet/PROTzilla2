@@ -31,7 +31,7 @@ def get_memory_usage():
 
 
 def clean_uniprot_id(uniprot_id):
-    # TODO: Probably intentional but this should be documented
+    # Isoforms have the dash and a number to discern the isoforms
     if "-" in uniprot_id:
         uniprot_id = uniprot_id.split("-")[0]
     if "_" in uniprot_id:
