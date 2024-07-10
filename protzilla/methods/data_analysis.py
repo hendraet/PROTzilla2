@@ -339,6 +339,7 @@ class PlotProtQuantPeptide(PlotStep):
     def method(self, inputs: dict) -> dict:
         return prot_quant_plot_peptide(**inputs)
 
+
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["input_df"] = steps.get_step_output(
             Step, "peptide_df", inputs["input_df"]
