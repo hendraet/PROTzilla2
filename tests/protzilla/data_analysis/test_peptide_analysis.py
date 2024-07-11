@@ -12,7 +12,7 @@ def test_filter_peptides_of_protein(peptides_df, evidence_peptide_df, df_num):
 
     assert len(filtered_peptides_df) == 6
     assert filtered_peptides_df["Sequence"].tolist() == [
-        'SEQB', 'SEQC', 'SEQD', 'SEQL', 'SEQQ', 'SEQV'
+        'SEQB', 'SEQC', 'SEQD', 'SEQK', 'SEQP', 'SEQU'
     ]
     assert (filtered_peptides_df["Protein ID"] == "Protein2").all()
 
