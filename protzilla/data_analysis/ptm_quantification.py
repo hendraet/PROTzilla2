@@ -21,9 +21,23 @@ def flexiquant_lf(
     metadata_df: pd.DataFrame,
     reference_group: str,
     protein_id: str,
+    grouping_column: str,
     num_init: int = 50,
     mod_cutoff: float = 0.5,
 ) -> dict:
+    """
+    FLEXIQuant-LF is a method to quantify protein modification extent in label-free proteomics data.
+
+    Parts of the implementation have been adapted from https://github.com/SteenOmicsLab/FLEXIQuantLF.
+
+    :param peptide_df: DataFrame containing peptide intensities.
+    :param metadata_df: DataFrame containing metadata.
+    :param reference_group: Name of the reference group.
+    :param protein_id: Protein ID that should be analysed.
+    :param num_init: Number of initializations for RANSAC regression.
+    :param mod_cutoff: RM score cutoff value for modified peptides.
+    """
+
     df = peptide_df[peptide_df["Protein ID"] == protein_id].pivot_table(
         index="Sample", columns="Sequence", values="Intensity", aggfunc="first"
     )
@@ -31,17 +45,17 @@ def flexiquant_lf(
 
     df = pd.merge(
         left=df,
-        right=metadata_df[["Sample", "Group"]],
+        right=metadata_df[["Sample", grouping_column]],
         on="Sample",
         copy=False,
     )
 
-    if not "Group" in df:
+    if not grouping_column in df:
         return dict(
             messages=[
                 dict(
                     level=logging.ERROR,
-                    msg="No 'Group' column found in provided dataframe.",
+                    msg=f"No {grouping_column} column found in provided dataframe.",
                 )
             ]
         )
@@ -49,7 +63,7 @@ def flexiquant_lf(
     # delete columns where all entries are nan
     df.dropna(how="all", axis=1, inplace=True)
 
-    if reference_group not in df["Group"].unique():
+    if reference_group not in df[grouping_column].unique():
         return dict(
             messages=[
                 dict(
@@ -60,7 +74,7 @@ def flexiquant_lf(
         )
     else:
         # filter dataframe for controls
-        df_control = df[df["Group"] == reference_group]
+        df_control = df[df[grouping_column] == reference_group]
 
     # get modified peptides
     modified = []
@@ -73,9 +87,9 @@ def flexiquant_lf(
     df.drop(modified, inplace=True, axis=1)
 
     # delete Group column
-    group_column = df["Group"]
-    df_control.drop("Group", axis=1, inplace=True)
-    df.drop("Group", axis=1, inplace=True)
+    group_column = df[grouping_column]
+    df_control.drop(grouping_column, axis=1, inplace=True)
+    df.drop(grouping_column, axis=1, inplace=True)
 
     sample_column = df["Sample"]
 
@@ -248,9 +262,9 @@ def flexiquant_lf(
     df_RM["Reproducibility factor"] = reproducibility_list
 
     # add Group column again
-    df_raw_scores["Group"] = group_column
-    df_RM["Group"] = group_column
-    df_RM_mod["Group"] = group_column
+    df_raw_scores[grouping_column] = group_column
+    df_RM[grouping_column] = group_column
+    df_RM_mod[grouping_column] = group_column
 
     # add Sample column again
     df_raw_scores["Sample"] = sample_column
@@ -266,6 +280,7 @@ def flexiquant_lf(
                         sample_column,
                         df_RM[df_RM["Sample"] == sample].iloc[0],
                         mod_cutoff=mod_cutoff,
+                        grouping_column=grouping_column,
                     )
                 )
             )
@@ -316,7 +331,19 @@ def calculate_confidence_band(
     matrix_distance_RL: pd.DataFrame,
     alpha: float,
 ):
-    """Calculates confidence bands arround the regression line"""
+    """
+    Calculates confidence bands arround the regression line.
+
+    :param slope: Slope of the regression line.
+    :param median_int: Median intensity of the reference group.
+    :param dataframe_train: DataFrame containing the training data.
+    :param X: Array containing the reference intensities.
+    :param y: Series containing the sample intensities.
+    :param row: Series containing the sample intensities.
+    :param idx: Index of the sample.
+    :param matrix_distance_RL: DataFrame containing the distances to the regression line.
+    :param alpha: Alpha value for the confidence band.
+    """
 
     # calculate predicted intensity with Reference intensity of a peptide and slope of the sample (Y hat)
     Y_pred = slope * median_int
@@ -388,8 +415,22 @@ def create_regression_plots(
     sample_column: pd.Series,
     rm_scores: pd.DataFrame,
     mod_cutoff: float,
+    grouping_column: str,
 ):
-    """Creates a scatter plot with regression line and confidence bands"""
+    """
+    Creates a scatter plot with regression line and confidence bands.
+
+    :param dataframe_train: DataFrame containing the training data.
+    :param idx: Index of the sample.
+    :param r2_score_model: R2 score of the model.
+    :param r2_score_data: R2 score of the data.
+    :param slope: Slope of the regression line.
+    :param alpha: Alpha value for the confidence band.
+    :param sample_column: Series containing the sample names.
+    :param rm_scores: DataFrame containing the RM scores.
+    :param mod_cutoff: RM score cutoff value for modified peptides.
+    :param grouping_column: Name of the grouping column.
+    """
 
     # create new figure with two subplots
     fig = plt.figure(figsize=(16, 9))
@@ -423,7 +464,14 @@ def create_regression_plots(
     plt.sca(ax1)
 
     rm_scores = rm_scores.drop(
-        ["Slope", "R2 model", "R2 data", "Reproducibility factor", "Group", "Sample"]
+        [
+            "Slope",
+            "R2 model",
+            "R2 data",
+            "Reproducibility factor",
+            grouping_column,
+            "Sample",
+        ]
     )
     # rm_scores.dropna(inplace=True)
     rm_scores.clip(0, 1, inplace=True)
@@ -496,12 +544,10 @@ def create_regression_plots(
 
 def calc_raw_scores(df_distance: pd.DataFrame, median_int: pd.Series):
     """
-    Parameters:
-         df_distance: Pandas DataFrame containing the vertical distances to the regression line
-                      rows: samples, columns: peptides
-         median_int: Pandas Series containing the median intensities for each peptide of the reference samples
-    Returns:
-        Pandas DataFrame of same dimension as df_distance containing raw scores
+    Calculates raw scores for each sample based on the distance to the regression line.
+
+    :param df_distance: DataFrame containing the distances to the regression line.
+    :param median_int: Median intensity of the reference group
     """
     # copy df_distance
     df_rs = df_distance.copy()
@@ -526,16 +572,12 @@ def calc_raw_scores(df_distance: pd.DataFrame, median_int: pd.Series):
     return df_rs
 
 
-def normalize_t3median(dataframe):
+def normalize_t3median(dataframe: pd.DataFrame):
     """
-    Applies Top3 median normalization to dataframe
-    Determines the median of the three highest values in each row and divides every value in the row by it
+    Applies Top3 median normalization to dataframe.
+    Determines the median of the three highest values in each row and divides every value in the row by it.
 
-    Parameter:
-        dataframe: Pandas dataframe of datatype float or integer
-
-    Returns:
-        normalized pandas dataframe of same dimensions as input dataframe
+    :param dataframe: DataFrame containing the data to be normalized.
     """
     # copy dataframe
     dataframe_t3med = dataframe.copy()
@@ -557,6 +599,13 @@ def normalize_t3median(dataframe):
 
 
 def scale_to_mod_cutoff(values: list[float], cutoff: float) -> list[float]:
+    """
+    Scales values to a cutoff value.
+
+    :param values: List of values to be scaled.
+    :param cutoff: Cutoff value.
+    """
+
     return [
         0.5 + (v - cutoff) * 0.5 / (1 - cutoff)
         if v >= 0.5

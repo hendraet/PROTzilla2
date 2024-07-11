@@ -990,6 +990,7 @@ class FLEXIQuantLFForm(MethodForm):
     is_dynamic = True
 
     peptide_df = CustomChoiceField(label="Peptide dataframe", choices=[])
+    grouping_column = CustomChoiceField(label="Grouping column in metadata", choices=[])
     reference_group = CustomChoiceField(label="Reference group", choices=[])
     protein_id = CustomChoiceField(label="Protein ID", choices=[])
     num_init = CustomNumberField(
@@ -1005,8 +1006,16 @@ class FLEXIQuantLFForm(MethodForm):
 
     def fill_form(self, run: Run) -> None:
         self.fields["peptide_df"].choices = fill_helper.get_choices(run, "peptide_df")
+        self.fields["grouping_column"].choices = fill_helper.to_choices(
+            run.steps.metadata_df.drop("Sample", axis=1).columns[1:]
+        )
+
+        chosen_grouping_column = self.data.get(
+            "grouping_column", self.fields["grouping_column"].choices[0][0]
+        )
+
         self.fields["reference_group"].choices = fill_helper.to_choices(
-            run.steps.metadata_df["Group"].unique()
+            run.steps.metadata_df[chosen_grouping_column].unique()
         )
         peptide_df_instance_id = self.data.get(
             "peptide_df", self.fields["peptide_df"].choices[0][0]
