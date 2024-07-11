@@ -37,3 +37,5 @@ sphinx==7.2.6
 sphinx-autoapi==3.0.0
 openpyxl==3.1.2
 pydeseq2==0.4.9
+seaborn==0.13.0
+matplotlib==3.8.0
