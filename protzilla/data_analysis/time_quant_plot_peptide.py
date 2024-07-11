@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from scipy import stats
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 
-from protzilla.utilities.transform_dfs import is_long_format, long_to_wide_retention_time
+from protzilla.utilities.transform_dfs import is_long_format, long_to_wide_time
 
 # Define color constants
 PROTZILLA_DISCRETE_COLOR_SEQUENCE = ["#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#19D3F3", "#E763FA", "#FECB52", "#FFA15A", "#FF6692", "#B6E880"]
@@ -15,8 +15,9 @@ colors = {
     "annotation_proteins_of_interest": "#4A536A",
 }
 
-def prot_quant_plot_peptide(
+def time_quant_plot_peptide(
     input_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
     protein_group: str,
     similarity: float = 1.0,
     similarity_measure: str = "euclidean distance",
@@ -30,6 +31,7 @@ def prot_quant_plot_peptide(
 
     :param input_df: A dataframe in protzilla wide format, where each row
         represents a sample and each column represents a feature.
+    :param metadata_df: A dataframe containing the metadata of the samples.
     :param protein_group: Protein IDs as the columnheader of the dataframe
     :param similarity_measure: method to compare the chosen proteingroup with all others. The two
         methods are "cosine similarity" and "euclidean distance".
@@ -37,8 +39,16 @@ def prot_quant_plot_peptide(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
+
+    input_df = pd.merge(
+        left=input_df,
+        right=metadata_df[["Sample", "Time"]],
+        on="Sample",
+        copy=False,
+    )
+
     wide_df = input_df.interpolate(method='linear', axis=0)
-    wide_df = long_to_wide_retention_time(wide_df) if is_long_format(wide_df) else  wide_df
+    wide_df = long_to_wide_time(wide_df) if is_long_format(wide_df) else  wide_df
 
 
     if protein_group not in wide_df.columns:
@@ -78,7 +88,7 @@ def prot_quant_plot_peptide(
             x=lower_upper_x,
             y=lower_upper_y,
             fill="toself",
-            name="Retention time of all protein groups",
+            name="Intensity Range",
             line=dict(color="silver"),
         )
     )
@@ -138,45 +148,30 @@ def prot_quant_plot_peptide(
             line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2]),
         )
     )
-
     fig.add_trace(
         go.Scatter(
             x=[None],
             y=[None],
             mode="markers",
             marker=dict(color=color_mapping.get("A")),
-            name="Experimental Group",
+            name="Intensity",
         )
     )
-
-    fig.add_trace(
-        go.Scatter(
-            x=[None],
-            y=[None],
-            mode="markers",
-            marker=dict(color=color_mapping.get("C")),
-            name="Control Group",
-        )
-    )
-
     fig.update_layout(
-        title=f"Retention time of {formatted_protein_name} in all samples",
+        title=f"Time Series of {formatted_protein_name} in all samples",
         plot_bgcolor=colors["plot_bgcolor"],
         xaxis_gridcolor=colors["gridcolor"],
         yaxis_gridcolor=colors["gridcolor"],
         xaxis_linecolor=colors["linecolor"],
         yaxis_linecolor=colors["linecolor"],
-        xaxis_title="Sample",
-        yaxis_title="Retention time",
+        xaxis_title="Time",
+        yaxis_title="Intensity",
         legend_title="Legend",
         xaxis=dict(
             tickmode="array",
             tickangle=0,
             tickvals=wide_df.index,
-            ticktext=[
-                f"<span style='font-size: 10px; color:{color_mapping.get(label[0], 'black')}'><b>•</b></span>"
-                for label in wide_df.index
-            ],
+            ticktext=[wide_df["Time"].unique() for wide_df["Time"] in wide_df.index],
         ),
         autosize=True,
         margin=dict(l=100, r=300, t=100, b=100),

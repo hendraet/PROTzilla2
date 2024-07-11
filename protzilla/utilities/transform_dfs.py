@@ -3,6 +3,7 @@ import pandas as pd
 from protzilla.utilities import default_intensity_column
 
 
+
 def long_to_wide(intensity_df: pd.DataFrame, value_name: str = None):
     """
     This function transforms the dataframe to a wide format that
@@ -17,19 +18,13 @@ def long_to_wide(intensity_df: pd.DataFrame, value_name: str = None):
         packages such as sklearn
     :rtype: pd.DataFrame
     """
-
-    if intensity_df.duplicated(subset=["Sample", "Protein ID"]).any():
-        intensity_df = intensity_df.groupby(["Sample", "Protein ID"]).mean().reset_index()
-        intensity_df = intensity_df.dropna()
-
     values_name = default_intensity_column(intensity_df) if value_name is None else value_name
-    intensity_df = pd.pivot(
+    return pd.pivot(
         intensity_df, index="Sample", columns="Protein ID", values=values_name
     )
-    intensity_df = intensity_df.fillna(intensity_df.mean())
-    return intensity_df
 
-def long_to_wide_retention_time(intensity_df: pd.DataFrame, value_name: str = None):
+
+def long_to_wide_time(intensity_df: pd.DataFrame, value_name: str = None):
     """
     This function transforms the dataframe to a wide format that
     can be more easily handled by packages such as sklearn.
@@ -43,14 +38,11 @@ def long_to_wide_retention_time(intensity_df: pd.DataFrame, value_name: str = No
         packages such as sklearn
     :rtype: pd.DataFrame
     """
-
-    if intensity_df.duplicated(subset=["Sample", "Protein ID"]).any():
-        intensity_df = intensity_df.groupby(["Sample", "Protein ID"]).mean().reset_index()
-        intensity_df = intensity_df.dropna()
-
-    values_name = 'Retention time'
+    if intensity_df.duplicated(subset=["Time", "Protein ID"]).any():
+        intensity_df = intensity_df.groupby(["Time", "Protein ID"]).mean().reset_index()
+    values_name = default_intensity_column(intensity_df) if value_name is None else value_name
     intensity_df = pd.pivot(
-        intensity_df, index="Sample", columns="Protein ID", values=values_name
+        intensity_df, index="Time", columns="Protein ID", values=values_name
     )
     intensity_df = intensity_df.fillna(intensity_df.mean())
     return intensity_df
@@ -72,34 +64,27 @@ def wide_to_long(wide_df: pd.DataFrame, original_long_df: pd.DataFrame):
     """
     # Read out info from original dataframe
     intensity_name = default_intensity_column(original_long_df)
-
-    # Identify the additional columns from the original long dataframe
-    additional_columns = ['Modification', 'Retention Time']
-    existing_additional_columns = [col for col in additional_columns if col in original_long_df.columns]
-
-    # Melt the wide format back to long format
-    melted_df = pd.melt(
-        wide_df,
+    gene_info = original_long_df["Gene"]
+    # Turn the wide format into the long format
+    intensity_df = pd.melt(
+        wide_df.reset_index(),
         id_vars="Sample",
         var_name="Protein ID",
         value_name=intensity_name,
     )
-    melted_df.sort_values(
+    intensity_df.sort_values(
         by=["Sample", "Protein ID"],
         ignore_index=True,
         inplace=True,
     )
+    intensity_df.insert(2, "Gene", gene_info)
 
-    # Add back the additional columns if they exist in the original dataframe
-    for col in existing_additional_columns:
-        melted_df[col] = original_long_df[col]
-
-    return melted_df
+    return intensity_df
 
 
 def is_long_format(df: pd.DataFrame):
     required_columns = {"Sample", "Protein ID"}
-    additional_columns = {"Gene", "Retention time"}
+    additional_columns = {"Gene", "Time"}
     return required_columns.issubset(df.columns) and any(col in df.columns for col in additional_columns)
 
 

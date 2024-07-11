@@ -514,7 +514,7 @@ class PlotProtQuantForm(MethodForm):
                 self.data["similarity"] = 1
 
 
-class PlotProtQuantPeptideForm(MethodForm):
+class PlotTimeQuantPeptideForm(MethodForm):
     is_dynamic = True
 
     input_df = CustomChoiceField(

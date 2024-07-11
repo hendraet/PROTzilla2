@@ -21,7 +21,7 @@ from protzilla.data_analysis.plots import (
     prot_quant_plot,
     scatter_plot,
 )
-from protzilla.data_analysis.prot_quant_plot_peptide import prot_quant_plot_peptide
+from protzilla.data_analysis.time_quant_plot_peptide import time_quant_plot_peptide
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
@@ -326,24 +326,25 @@ class PlotProtQuant(PlotStep):
         )
         return inputs
 
-class PlotProtQuantPeptide(PlotStep):
-    display_name = "Protein Quantification Plot For Peptide"
+class PlotTimeQuantPeptide(PlotStep):
+    display_name = "Time Quantification Plot For Peptide"
     operation = "plot"
     method_description = (
-        "Creates a line chart for intensity across samples for protein groups"
+        "Creates a line chart for intensity across Time for protein groups"
     )
 
-    input_keys = ["input_df", "protein_group", "similarity_measure", "similarity"]
+    input_keys = ["input_df", "metadata_df", "protein_group", "similarity_measure", "similarity"]
     output_keys = []
 
     def method(self, inputs: dict) -> dict:
-        return prot_quant_plot_peptide(**inputs)
+        return time_quant_plot_peptide(**inputs)
 
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["input_df"] = steps.get_step_output(
             Step, "peptide_df", inputs["input_df"]
         )
+        inputs["metadata_df"] = steps.metadata_df
         return inputs
 
 
