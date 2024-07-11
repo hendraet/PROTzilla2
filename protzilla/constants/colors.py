@@ -21,6 +21,7 @@ PROTAN_DISCRETE_COLOR_SEQUENCE = [
     "#daa217",  # yellow
     "#a8b3ef",  # light blue
     "#a1a5b2",  # grey
+    "#0051a9"   # dark blue
 
 ]
 # justify how colors come about
@@ -28,7 +29,8 @@ DEUTAN_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
     "#FF911E",  # yellow
     "#A4B6EF",  # light blue
-    "#a1a5b2"   # grey
+    "#a1a5b2",  # grey
+    "#0062a9"   # dark blue
 
 ]
 
@@ -36,7 +38,8 @@ TRITAN_DISCRETE_COLOR_SEQUENCE = [
     "#48565d",  # blue
     "#f48e9b",  # pink
     "#99bbca",  # light blue
-    "#a1a5b2"   # grey
+    "#a1a5b2",  # grey
+    "#22c6d5"   # turquoise
 ]
 
 MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE = [
@@ -44,7 +47,7 @@ MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE = [
     "#4C4C4C",  # dark grey
     "#949494",  # light grey
     "#C5C5C5",  # grey
-    "#333333"   # black
+    "#333333"   # black-ish
 ]
 
 

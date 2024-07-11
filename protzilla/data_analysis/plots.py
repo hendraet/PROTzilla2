@@ -8,11 +8,11 @@ import plotly.graph_objects as go
 from scipy import stats
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances
 import protzilla.constants.colors as colorscheme
-from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE, PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 from protzilla.utilities.clustergram import Clustergram
 from protzilla.utilities.transform_dfs import is_long_format, long_to_wide
 
-colors = {
+
+background_colors = {
     "plot_bgcolor": "white",
     "gridcolor": "#F1F1F1",
     "linecolor": "#F1F1F1",
@@ -35,40 +35,44 @@ def scatter_plot(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
+    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 
     intensity_df_wide = long_to_wide(input_df) if is_long_format(input_df) else input_df
     try:
         color_df = (
             pd.DataFrame() if not isinstance(color_df, pd.DataFrame) else color_df
         )
-
         if color_df.shape[1] > 1:
             raise ValueError("The color dataframe should have 1 dimension only")
+
+        if not color_df.empty and color_df[color_df.columns[0]].nunique() > 7:
+            raise ValueError("The column with color attributes should have 7 or fewer unique values. Please try with "
+                             "a different attribute")
 
         if intensity_df_wide.shape[1] == 2:
             intensity_df_wide = pd.concat([intensity_df_wide, color_df], axis=1)
             x_name, y_name = intensity_df_wide.columns[:2]
             color_name = color_df.columns[0] if not color_df.empty else None
-            fig = px.scatter(intensity_df_wide, x=x_name, y=y_name, color=color_name)
-            fig.update_traces(
-                marker=dict(color=colors["annotation_proteins_of_interest"])
+            fig = px.scatter(
+                intensity_df_wide, x=x_name, y=y_name, color=color_name, color_discrete_sequence=data_colors
             )
+
         elif intensity_df_wide.shape[1] == 3:
             intensity_df_wide = pd.concat([intensity_df_wide, color_df], axis=1)
             x_name, y_name, z_name = intensity_df_wide.columns[:3]
             color_name = color_df.columns[0] if not color_df.empty else None
             fig = px.scatter_3d(
-                intensity_df_wide, x=x_name, y=y_name, z=z_name, color=color_name
+                intensity_df_wide, x=x_name, y=y_name, z=z_name, color=color_name, color_discrete_sequence=data_colors
             )
-            fig.update_traces(marker_color=colors["annotation_proteins_of_interest"])
         else:
             raise ValueError(
                 "The dimensions of the DataFrame are either too high or too low."
             )
-        fig.update_layout(plot_bgcolor=colors["plot_bgcolor"])
-        fig.update_xaxes(gridcolor=colors["gridcolor"], linecolor=colors["linecolor"])
-        fig.update_yaxes(gridcolor=colors["gridcolor"], linecolor=colors["linecolor"])
+        fig.update_layout(plot_bgcolor=background_colors["plot_bgcolor"])
+        fig.update_xaxes(gridcolor=background_colors["gridcolor"], linecolor=background_colors["linecolor"])
+        fig.update_yaxes(gridcolor=background_colors["gridcolor"], linecolor=background_colors["linecolor"])
         return dict(plots=[fig])
+
     except ValueError as e:
         msg = ""
         if intensity_df_wide.shape[1] < 2:
@@ -83,6 +87,11 @@ def scatter_plot(
             )
         elif color_df.shape[1] != 1:
             msg = "The color dataframe should have 1 dimension only"
+
+        elif color_df[color_df.columns[0]].nunique() > 7:
+            msg = "The column with color attributes should have 7 or fewer unique values. Please try with a different " \
+                  "attribute"
+
         return dict(messages=[dict(level=logging.ERROR, msg=msg, trace=str(e))])
 
 
@@ -109,6 +118,7 @@ def create_volcano_plot(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
+    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 
     plot_df = p_values.join(log2_fc.set_index("Protein ID"), on="Protein ID")
     fig = dashbio.VolcanoPlot(
@@ -123,9 +133,9 @@ def create_volcano_plot(
         ylabel="-log10(p)",
         title="Volcano Plot",
         annotation="Protein ID",
-        plot_bgcolor=colors["plot_bgcolor"],
-        xaxis_gridcolor=colors["gridcolor"],
-        yaxis_gridcolor=colors["gridcolor"],
+        plot_bgcolor=background_colors["plot_bgcolor"],
+        xaxis_gridcolor=background_colors["gridcolor"],
+        yaxis_gridcolor=background_colors["gridcolor"],
     )
     if proteins_of_interest is None:
         proteins_of_interest = []
@@ -148,10 +158,10 @@ def create_volcano_plot(
             text=protein,
             showarrow=True,
             arrowhead=1,
-            font=dict(color=colors["annotation_text_color"]),
+            font=dict(color=background_colors["annotation_text_color"]),
             align="center",
-            arrowcolor=colors["annotation_proteins_of_interest"],
-            bgcolor=colors["annotation_proteins_of_interest"],
+            arrowcolor=background_colors["annotation_proteins_of_interest"],
+            bgcolor=background_colors["annotation_proteins_of_interest"],
             opacity=0.8,
             ax=0,
             ay=-20,
@@ -168,12 +178,18 @@ def create_volcano_plot(
             legendgroup=new_names[t.name],
         )
     )
+    significant_protein_color = data_colors[1]
+    not_significant_protein_color = data_colors[0]
+    if colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1] in colorscheme.MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE:
+        significant_protein_color = data_colors[0]
+        not_significant_protein_color = data_colors[1]
+
     fig.update_traces(
-        marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2]),
+        marker=dict(color=significant_protein_color),
         selector=dict(name="Significant Proteins"),
     )
     fig.update_traces(
-        marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[0]),
+        marker=dict(color=not_significant_protein_color),
         selector=dict(name="Not Significant Proteins"),
     )
 
@@ -307,7 +323,7 @@ def prot_quant_plot(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
-
+    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     wide_df = long_to_wide(input_df) if is_long_format(input_df) else input_df
 
     if protein_group not in wide_df.columns:
@@ -324,8 +340,8 @@ def prot_quant_plot(
     fig = go.Figure()
 
     color_mapping = {
-        "A": colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[0],
-        "C": colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[3],
+        "A": data_colors[0],
+        "C": data_colors[3],
     }
 
     lower_upper_x = []
@@ -379,7 +395,7 @@ def prot_quant_plot(
                 y=wide_df[group],
                 mode="lines",
                 name=group[:15] + "..." if len(group) > 15 else group,
-                line=dict(color=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[2]),
+                line=dict(color=data_colors[2]),
                 showlegend=len(similar_groups) <= 7,
             )
         )
@@ -390,7 +406,7 @@ def prot_quant_plot(
                 x=[None],
                 y=[None],
                 mode="lines",
-                line=dict(color=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[2]),
+                line=dict(color=data_colors[2]),
                 name="Similar Protein Groups",
             )
         )
@@ -399,9 +415,9 @@ def prot_quant_plot(
         protein_group[:15] + "..." if len(protein_group) > 15 else protein_group
     )
 
-    if colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1] in colorscheme.MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE:
+    if data_colors[1] in colorscheme.MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE:
         line_type = "lines+markers"
-        color_mapping["A"] = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[4]
+        color_mapping["A"] = data_colors[4]
     else:
         line_type = "lines"
 
@@ -411,7 +427,7 @@ def prot_quant_plot(
             y=wide_df[protein_group],
             mode=line_type,
             name=formatted_protein_name,
-            line=dict(color=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1], width=3),
+            line=dict(color=data_colors[1], width=3),
         )
     )
 
@@ -437,11 +453,11 @@ def prot_quant_plot(
 
     fig.update_layout(
         title=f"Intensity of {formatted_protein_name} in all samples",
-        plot_bgcolor=colors["plot_bgcolor"],
-        xaxis_gridcolor=colors["gridcolor"],
-        yaxis_gridcolor=colors["gridcolor"],
-        xaxis_linecolor=colors["linecolor"],
-        yaxis_linecolor=colors["linecolor"],
+        plot_bgcolor=background_colors["plot_bgcolor"],
+        xaxis_gridcolor=background_colors["gridcolor"],
+        yaxis_gridcolor=background_colors["gridcolor"],
+        xaxis_linecolor=background_colors["linecolor"],
+        yaxis_linecolor=background_colors["linecolor"],
         xaxis_title="Sample",
         yaxis_title="Intensity",
         legend_title="Legend",

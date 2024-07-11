@@ -8,7 +8,7 @@ from protzilla.constants.protzilla_logging import logger
 from protzilla.utilities.utilities import fig_to_base64
 
 from ..constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE
-
+import protzilla.constants.colors as colorscheme
 
 def GO_enrichment_bar_plot(
     input_df,
@@ -106,7 +106,7 @@ def GO_enrichment_bar_plot(
         column = "P-value" if restring_input else "Adjusted P-value"
 
     if colors == "" or colors is None or len(colors) == 0:
-        colors = PROTZILLA_DISCRETE_COLOR_SEQUENCE
+        colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     size_y = top_terms * 0.5 * len(gene_sets)
     try:
         ax = gseapy.barplot(

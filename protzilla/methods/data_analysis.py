@@ -189,7 +189,8 @@ class PlotVolcano(PlotStep):
 class PlotScatterPlot(PlotStep):
     display_name = "Scatter Plot"
     operation = "plot"
-    method_description = "Creates a scatter plot from data. This requires a dimension reduction method to be run first, as the input dataframe should contain only 2 or 3 columns."
+    method_description = "Creates a scatter plot from data. This requires a dimension reduction method to be run " \
+                         "first, as the input dataframe should contain only 2 or 3 columns."
 
     input_keys = [
         "input_df",
@@ -205,7 +206,8 @@ class PlotScatterPlot(PlotStep):
         inputs["input_df"] = steps.get_step_output(
             Step, "embedded_data", inputs["input_df"]
         )
-        inputs["color_df"] = steps.get_step_output(Step, "color_df", inputs["color_df"])
+        if inputs.get("color_df"):
+            inputs["color_df"] = steps.metadata_df[[inputs["color_df"]]].reindex(steps.metadata_df.index)
         return inputs
 
 
