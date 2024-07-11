@@ -11,6 +11,7 @@ from protzilla.data_analysis.spectrum_prediction.spectrum import (
     SpectrumExporter,
 )
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
+    CSV_COLUMNS,
     DATA_KEYS,
     FRAGMENTATION_TYPE,
     OUTPUT_KEYS,
@@ -136,6 +137,55 @@ def prediction_df_high_charge():
             ],
         }
     )
+
+
+@pytest.fixture
+def spectrum_one():
+    return Spectrum(
+        "sequence1",
+        1,
+        1.0,
+        [100, 200],
+        [0.5, 0.7],
+        {"Charge": 1, "Parent": 1.0},
+        {DATA_KEYS.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
+    )
+
+
+@pytest.fixture
+def spectrum_two():
+    return Spectrum(
+        "sequence2",
+        2,
+        2.0,
+        [150, 250],
+        [0.6, 0.8],
+        {"Charge": 2, "Parent": 2.0},
+        {DATA_KEYS.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
+    )
+
+
+@pytest.fixture
+def spectrum_none_metadata():
+    return Spectrum(
+        "sequence1",
+        None,
+        None,
+        [100, 200],
+        [0.5, 0.7],
+        {"Charge": None},
+        {DATA_KEYS.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
+    )
+
+
+@pytest.fixture
+def expected_csv_header():
+    return ",".join(CSV_COLUMNS)
+
+
+@pytest.fixture
+def expected_tsv_header():
+    return "\t".join(CSV_COLUMNS)
 
 
 def test_spectrum_prediction(spectrum_prediction_run):
@@ -418,7 +468,7 @@ def test_peak_annotation_with_valid_data():
             OUTPUT_KEYS.FRAGMENT_CHARGE: [1, 2, 1],
         }
     )
-    result = SpectrumExporter.format_peaks(spectrum_df)
+    result = SpectrumExporter._format_peaks_for_msp(spectrum_df)
     expected = ['100.0\t0.1\t"b^1"\n', '200.0\t0.2\t"y^2"\n', '300.0\t0.3\t"b^1"\n']
     assert result == expected
 
@@ -430,7 +480,7 @@ def test_peak_annotation_with_empty_data():
             DATA_KEYS.INTENSITY: [],
         }
     )
-    result = SpectrumExporter.format_peaks(spectrum_df)
+    result = SpectrumExporter._format_peaks_for_msp(spectrum_df)
     assert result == []
 
 
@@ -443,6 +493,122 @@ def test_peak_annotation_with_custom_prefix_suffix():
             OUTPUT_KEYS.FRAGMENT_CHARGE: [1, 2, 1],
         }
     )
-    result = SpectrumExporter.format_peaks(spectrum_df, prefix="(", suffix=")")
+    result = SpectrumExporter._format_peaks_for_msp(spectrum_df, prefix="(", suffix=")")
     expected = ["100.0\t0.1\t(b^1)\n", "200.0\t0.2\t(y^2)\n", "300.0\t0.3\t(b^1)\n"]
     assert result == expected
+
+
+import pytest
+
+from protzilla.data_analysis.spectrum_prediction.spectrum import (
+    Spectrum,
+    SpectrumExporter,
+)
+
+
+def test_export_to_msp_with_valid_spectra(spectrum_one, spectrum_two):
+    spectra = [spectrum_one, spectrum_two]
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_msp(spectra, base_file_name)
+    assert "Name: sequence1" in result.content
+    assert "Name: sequence2" in result.content
+    assert "Charge=1" in result.content
+    assert "Charge=2" in result.content
+    assert "Parent=1.0" in result.content
+    assert "Parent=2.0" in result.content
+
+
+def test_export_to_msp_with_empty_spectra():
+    spectra = []
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_msp(spectra, base_file_name)
+    assert result.content == ""
+
+
+def test_export_to_msp_with_none_metadata(spectrum_none_metadata):
+    spectra = [spectrum_none_metadata]
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_msp(spectra, base_file_name)
+    assert "Name: sequence1" in result.content
+    assert "Charge=" not in result.content
+    assert "Parent=" not in result.content
+
+
+import pytest
+
+from protzilla.data_analysis.spectrum_prediction.spectrum import (
+    Spectrum,
+    SpectrumExporter,
+)
+
+
+def test_export_to_csv_with_valid_spectra(
+    spectrum_one, spectrum_two, expected_csv_header
+):
+    spectra = [spectrum_one, spectrum_two]
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_csv(spectra, base_file_name)
+    assert result.file_extension == "csv"
+    assert result.base_file_name == base_file_name
+    assert result.filename == "test_file.csv"
+    assert expected_csv_header in result.content
+    assert "sequence1,1.0,1,100,0.5,b,1" in result.content
+    assert "sequence2,2.0,2,150,0.6,b,1" in result.content
+
+
+def test_export_to_csv_with_empty_spectra(expected_csv_header):
+    spectra = []
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_csv(spectra, base_file_name)
+    assert result.filename == "test_file.csv"
+    assert expected_csv_header in result.content
+
+
+def test_export_to_csv_with_invalid_separator(spectrum_one):
+    spectra = [spectrum_one]
+    base_file_name = "test_file"
+    with pytest.raises(ValueError):
+        SpectrumExporter.export_to_csv(spectra, base_file_name, seperator="*")
+
+
+def test_export_to_csv_with_tab_separator(spectrum_one, expected_tsv_header):
+    spectra = [spectrum_one]
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_csv(spectra, base_file_name, seperator="\t")
+    assert result.file_extension == "tsv"
+    assert expected_tsv_header in result.content
+    assert "sequence1\t1.0\t1\t" in result.content
+
+
+import pytest
+
+from protzilla.data_analysis.spectrum_prediction.spectrum import (
+    Spectrum,
+    SpectrumExporter,
+)
+
+
+def test_export_to_mgf_with_valid_spectra(spectrum_one, spectrum_two):
+    spectra = [spectrum_one, spectrum_two]
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_mgf(spectra, base_file_name)
+    assert "BEGIN IONS" in result.content
+    assert "TITLE=sequence1" in result.content
+    assert "TITLE=sequence2" in result.content
+    assert "CHARGE=1+" in result.content
+    assert "CHARGE=2+" in result.content
+    assert "END IONS" in result.content
+
+
+def test_export_to_mgf_with_empty_spectra():
+    spectra = []
+    base_file_name = "test_file"
+    result = SpectrumExporter.export_to_mgf(spectra, base_file_name)
+    assert result.content == ""
+
+
+def test_export_to_mgf_with_none_metadata(spectrum_none_metadata):
+    spectra = [spectrum_none_metadata]
+    base_file_name = "test_file"
+    with pytest.raises(ValueError):
+        SpectrumExporter.export_to_mgf(spectra, base_file_name)

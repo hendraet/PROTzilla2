@@ -27,6 +27,10 @@ class FileOutput:
     file_extension: str
     content: str
 
+    @property
+    def filename(self) -> str:
+        return f"{self.base_file_name}.{self.file_extension}"
+
 
 class ErrorHandler:
     def __enter__(self):

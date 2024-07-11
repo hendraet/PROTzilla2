@@ -10,6 +10,7 @@ from protzilla.data_analysis.spectrum_prediction.spectrum import (
     SpectrumPredictorFactory,
 )
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
+    AVAILABLE_FORMATS,
     DATA_KEYS,
 )
 
@@ -48,10 +49,12 @@ def predict(
     predictor.load_prediction_df(prediction_df)
     predicted_spectra = predictor.predict()
     base_name = "predicted_spectra"
-    if output_format == "csv":
+    if output_format == AVAILABLE_FORMATS.CSV_TSV:
         output = SpectrumExporter.export_to_csv(predicted_spectra, base_name)
-    elif output_format == "msp":
+    elif output_format == AVAILABLE_FORMATS.MSP:
         output = SpectrumExporter.export_to_msp(predicted_spectra, base_name)
+    elif output_format == AVAILABLE_FORMATS.MGF:
+        output = SpectrumExporter.export_to_mgf(predicted_spectra, base_name)
 
     metadata_dfs = []
     peaks_dfs = []

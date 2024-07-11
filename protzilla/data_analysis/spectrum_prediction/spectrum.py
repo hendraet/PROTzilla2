@@ -11,6 +11,8 @@ from tqdm import tqdm
 
 from protzilla.constants.protzilla_logging import logger
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
+    CSV_COLUMNS,
+    CSV_KEYS,
     DATA_KEYS,
     MODEL_METADATA,
     OUTPUT_KEYS,
@@ -32,8 +34,10 @@ class Spectrum:
     ):
         self.peptide_sequence = peptide_sequence
         self.peptide_mz = peptide_mz
-        self.metadata = metadata if metadata else {}
         self.precursor_charge = charge
+        self.metadata = metadata if metadata else {}
+        self._initialize_metadata()
+        self.unique_id = self._generate_hash()
 
         self.spectrum = pd.DataFrame(
             zip(mz_values, intensity_values),
@@ -46,8 +50,6 @@ class Spectrum:
         if sanitize:
             self._sanitize_spectrum()
 
-        self.unique_id = self._generate_hash()
-
     def __str__(self):
         return f"{self.peptide_sequence}: {self.precursor_charge}, {self.spectrum.shape[0]} peaks"
 
@@ -57,12 +59,15 @@ class Spectrum:
 
     def _generate_hash(self) -> str:
         """Generate a unique hash based on all metadata of the spectrum."""
-        metadata_str = (
-            f"{self.peptide_sequence}_{self.precursor_charge}_{self.peptide_mz}"
-        )
-        for key, value in sorted(self.metadata.items()):  # Sort for consistency
-            metadata_str += f"_{key}_{value}"
+        metadata_str = "".join(f"{k}={v}" for k, v in sorted(self.metadata.items()))
         return hashlib.md5(metadata_str.encode()).hexdigest()
+
+    def _initialize_metadata(self):
+        self.metadata.setdefault(DATA_KEYS.PEPTIDE_SEQUENCE, self.peptide_sequence)
+        self.metadata.setdefault(DATA_KEYS.PRECURSOR_CHARGE, self.precursor_charge)
+        self.metadata.setdefault(DATA_KEYS.PEPTIDE_MZ, self.peptide_mz)
+        self.metadata.setdefault(DATA_KEYS.COLLISION_ENERGY, None)
+        self.metadata.setdefault(DATA_KEYS.FRAGMENTATION_TYPE, None)
 
     def __str__(self):
         return f"{self.peptide_sequence}: {self.charge}, {self.spectrum.shape[0]} peaks"
@@ -89,9 +94,6 @@ class Spectrum:
         metadata_df = pd.DataFrame(
             {
                 "unique_id": [self.unique_id],
-                DATA_KEYS.PEPTIDE_SEQUENCE: [self.peptide_sequence],
-                DATA_KEYS.PRECURSOR_CHARGE: [self.precursor_charge],
-                DATA_KEYS.PEPTIDE_MZ: [self.peptide_mz],
                 **{k: [v] for k, v in self.metadata.items()},
             }
         )
@@ -357,20 +359,28 @@ class SpectrumPredictorFactory:
 
 
 class SpectrumExporter:
+    msp_metadata_mapping = {
+        DATA_KEYS.PRECURSOR_CHARGE: "Charge",
+        DATA_KEYS.PEPTIDE_MZ: "Parent",
+    }
+
     @staticmethod
     def export_to_msp(spectra: list[Spectrum], base_file_name: str):
         lines = []
         for spectrum in tqdm(
             spectra, desc="Exporting spectra to .msp format", total=len(spectra)
         ):
-            header_dict = {
-                "Name": spectrum.peptide_sequence,
-                "Comment": "".join([f"{k}={v} " for k, v in spectrum.metadata.items()]),
-                "Num Peaks": len(spectrum.spectrum),
+            renamed_metadata = {
+                SpectrumExporter.msp_metadata_mapping.get(k): v
+                for k, v in spectrum.metadata.items()
+                if k in SpectrumExporter.msp_metadata_mapping
             }
-            header = "\n".join([f"{k}: {v}" for k, v in header_dict.items()])
-            peaks = SpectrumExporter.format_peaks(spectrum.spectrum)
-            peaks = "".join(peaks)
+            header = (
+                f"Name: {spectrum.peptide_sequence}\n"
+                f"Comment: {''.join([f'{k}={v} ' for k, v in renamed_metadata.items() if v])}\n"
+                f"Num Peaks: {len(spectrum.spectrum)}"
+            )
+            peaks = "".join(SpectrumExporter._format_peaks_for_msp(spectrum.spectrum))
             lines.append(f"{header}\n{peaks}\n")
 
         logger.info(
@@ -381,12 +391,11 @@ class SpectrumExporter:
         return FileOutput(base_file_name, "msp", content)
 
     @staticmethod
-    def format_peaks(
+    def _format_peaks_for_msp(
         spectrum_df: pd.DataFrame,
         prefix='"',
         seperator=" ",
         suffix='"',
-        add_newline=True,
     ):
         peaks = [
             f"{mz}\t{intensity}"
@@ -422,17 +431,16 @@ class SpectrumExporter:
 
         return peaks
 
+    csv_fragment_pattern = re.compile(r"([yb])(\d+)")
+
     @staticmethod
     def export_to_csv(
         spectra: list[Spectrum], base_file_name: str, seperator: str = ","
     ):
-        # required columns: PrecursorMz, FragmentMz
-        # recommended columns: iRT (impossible), RelativeFragmentIntensity (maybe possible, @Chris),
-        # - StrippedSequence (peptide sequence without modifications, easy)
-        # - PrecursorCharge (maybe possible with evidence)
-        # - FragmentType (b or y, maybe possible, depends on model)
-        # - FragmentNumber (after which AA in the sequence the cut is, i think)
-        #
+        """Converts to generic text, see
+        https://biognosys.com/content/uploads/2023/03/Spectronaut-17_UserManual.pdf
+        for reference
+        """
         if seperator not in [",", ";", "\t"]:
             raise ValueError(r"Invalid seperator, please use one of: ',' , ';' , '\t'")
         if seperator == "\t":
@@ -442,38 +450,66 @@ class SpectrumExporter:
 
         output_df = pd.DataFrame()
         spectrum_dfs = []
-        fragment_pattern = re.compile(r"([yb])(\d+)")
         for spectrum in tqdm(spectra, desc="Preparing spectra"):
-            spectrum_df = spectrum.spectrum
-            spectrum_df["PrecursorMz"] = spectrum.peptide_mz
-            spectrum_df["StrippedSequence"] = spectrum.peptide_sequence
-            spectrum_df["PrecursorCharge"] = spectrum.precursor_charge
-            spectrum_df["FragmentNumber"] = spectrum_df[
+            spectrum_df = spectrum.spectrum.copy()
+            spectrum_df[CSV_KEYS.PEPTIDE_MZ] = spectrum.peptide_mz
+            spectrum_df[CSV_KEYS.PEPTIDE_SEQUENCE] = spectrum.peptide_sequence
+            spectrum_df[CSV_KEYS.PRECURSOR_CHARGE] = spectrum.precursor_charge
+            spectrum_df[CSV_KEYS.FRAGMENT_NUMBER] = spectrum_df[
                 OUTPUT_KEYS.FRAGMENT_TYPE
-            ].apply(lambda x: fragment_pattern.match(x).group(2))
-            spectrum_df["FragmentType"] = spectrum_df[OUTPUT_KEYS.FRAGMENT_TYPE].apply(
-                lambda x: fragment_pattern.match(x).group(1)
-            )
+            ].apply(lambda x: SpectrumExporter.csv_fragment_pattern.match(x).group(2))
+            spectrum_df[CSV_KEYS.FRAGMENT_TYPE] = spectrum_df[
+                OUTPUT_KEYS.FRAGMENT_TYPE
+            ].apply(lambda x: SpectrumExporter.csv_fragment_pattern.match(x).group(1))
             spectrum_df.rename(
                 columns={
-                    DATA_KEYS.MZ: "FragmentMz",
-                    DATA_KEYS.INTENSITY: "RelativeFragmentIntensity",
+                    DATA_KEYS.MZ: CSV_KEYS.MZ,
+                    DATA_KEYS.INTENSITY: CSV_KEYS.INTENSITY,
+                    DATA_KEYS.FRAGMENT_CHARGE: CSV_KEYS.FRAGMENT_CHARGE,
                 },
                 inplace=True,
             )
 
-            spectrum_df = spectrum_df[
-                [
-                    "PrecursorMz",
-                    "StrippedSequence",
-                    "FragmentMz",
-                    "PrecursorCharge",
-                    "FragmentNumber",
-                    "FragmentType",
-                    "RelativeFragmentIntensity",
-                ]
-            ]
+            spectrum_df = spectrum_df[CSV_COLUMNS]
             spectrum_dfs.append(spectrum_df)
-        output_df = pd.concat(spectrum_dfs, ignore_index=True)
+        output_df = (
+            pd.concat(spectrum_dfs, ignore_index=True)
+            if spectrum_dfs
+            else pd.DataFrame(columns=CSV_COLUMNS)
+        )
         content = output_df.to_csv(sep=seperator, index=False)
         return FileOutput(base_file_name, file_extension, content)
+
+    @staticmethod
+    def _format_peaks_for_mgf(spectrum_df: pd.DataFrame):
+        peaks = [
+            f"{mz}\t{intensity}"
+            for mz, intensity in spectrum_df[[DATA_KEYS.MZ, DATA_KEYS.INTENSITY]].values
+        ]
+        return peaks
+
+    @staticmethod
+    def export_to_mgf(spectra: list[Spectrum], base_file_name: str):
+        lines = []
+        for spectrum in tqdm(
+            spectra, desc="Exporting spectra to .mgf format", total=len(spectra)
+        ):
+            if spectrum.precursor_charge is None or spectrum.precursor_charge == 0:
+                raise ValueError(
+                    f"Invalid precursor charge for spectrum {spectrum.peptide_sequence}, please provide a valid precursor charge."
+                )
+            header = (
+                f"BEGIN IONS\n"
+                f"TITLE={spectrum.peptide_sequence}\n"
+                f"PEPMASS={spectrum.peptide_mz / spectrum.precursor_charge}\n"  # TODO THIS IS NOT EXACTLY CORRECT
+                f"CHARGE={spectrum.precursor_charge}+\n"
+            )
+            peaks = "".join(SpectrumExporter._format_peaks_for_mgf(spectrum.spectrum))
+            lines.append(f"{header}\n{peaks}\nEND IONS\n")
+
+        logger.info(
+            f"Exported {len(spectra)} spectra to MGF format, now combining them"
+        )
+        content = "\n".join(lines)
+        logger.info("Export finished!")
+        return FileOutput(base_file_name, "mgf", content)

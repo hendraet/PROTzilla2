@@ -33,6 +33,28 @@ class DATA_KEYS(StrEnum):
     FRAGMENT_CHARGE = "fragment_charge"
 
 
+class CSV_KEYS(StrEnum):
+    PEPTIDE_SEQUENCE = "StrippedSequence"
+    PRECURSOR_CHARGE = "PrecursorCharge"
+    PEPTIDE_MZ = "PrecursorMz"
+    MZ = "FragmentMz"
+    INTENSITY = "RelativeFragmentIntensity"
+    FRAGMENT_TYPE = "FragmentType"
+    FRAGMENT_NUMBER = "FragmentNumber"
+    FRAGMENT_CHARGE = "FragmentCharge"
+
+
+CSV_COLUMNS = [
+    CSV_KEYS.PEPTIDE_SEQUENCE,
+    CSV_KEYS.PEPTIDE_MZ,
+    CSV_KEYS.PRECURSOR_CHARGE,
+    CSV_KEYS.MZ,
+    CSV_KEYS.INTENSITY,
+    CSV_KEYS.FRAGMENT_TYPE,
+    CSV_KEYS.FRAGMENT_NUMBER,
+]
+
+
 class OUTPUT_KEYS(StrEnum):
     """These are the keys that are that are returned from the API"""
 
@@ -98,5 +120,6 @@ formatted_citation_dict = {
 
 
 class AVAILABLE_FORMATS(StrEnum):
-    CSV = "csv"
+    CSV_TSV = "csv/tsv"
     MSP = "msp"
+    MGF = "mgf"
