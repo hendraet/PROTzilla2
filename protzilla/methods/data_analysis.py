@@ -21,7 +21,7 @@ from protzilla.data_analysis.plots import (
     prot_quant_plot,
     scatter_plot,
 )
-from protzilla.data_analysis.time_series_plot_peptide import time_quant_plot_peptide
+from protzilla.data_analysis.time_series_plot_peptide import time_series_plot_peptide
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
@@ -337,7 +337,7 @@ class PlotTimeSeriesPeptide(PlotStep):
     output_keys = []
 
     def method(self, inputs: dict) -> dict:
-        return time_quant_plot_peptide(**inputs)
+        return time_series_plot_peptide(**inputs)
 
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:

@@ -87,7 +87,6 @@ def evidence_import(file_path, intensity_name, map_to_uniprot) -> dict:
         "Missed cleavages",
         "PEP",
         "Raw file",
-        "Retention time",
     ]
 
     read = pd.read_csv(
