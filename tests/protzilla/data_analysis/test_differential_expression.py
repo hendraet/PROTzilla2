@@ -555,7 +555,7 @@ def ptm_test_data():
     )
     test_amount_df = pd.DataFrame(
         data=test_amount_list,
-        columns=["Sample", "Oxidation", "Acetyl", "GlyGly", "Phospho", "Unmodified", "Peptides"],
+        columns=["Sample", "Oxidation", "Acetyl", "GlyGly", "Phospho", "Unmodified", "Total Amount of Peptides"],
     )
 
     test_metadata_list = (

@@ -128,10 +128,10 @@ def normalize_ptm_df(ptm_df: pd.DataFrame) -> pd.DataFrame:
     """
     ptm_df_without_sample = ptm_df.drop("Sample", axis=1)
 
-    normalized_ptm_df = ptm_df_without_sample.div(ptm_df["Peptides"], axis=0)
+    normalized_ptm_df = ptm_df_without_sample.div(ptm_df["Total Amount of Peptides"], axis=0)
 
-    normalized_ptm_df = normalized_ptm_df.drop("Peptides", axis=1)
-    normalized_ptm_df["Sample"] = ptm_df["Sample"]
+    normalized_ptm_df = normalized_ptm_df.drop("Total Amount of Peptides", axis=1)
+    normalized_ptm_df.insert(0, "Sample", ptm_df["Sample"])
 
     return normalized_ptm_df
 
