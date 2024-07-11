@@ -15,7 +15,7 @@ colors = {
     "annotation_proteins_of_interest": "#4A536A",
 }
 
-def time_quant_plot_peptide(
+def time_series_plot_peptide(
     input_df: pd.DataFrame,
     metadata_df: pd.DataFrame,
     protein_group: str,
