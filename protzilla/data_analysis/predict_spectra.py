@@ -53,19 +53,20 @@ def predict(
     elif output_format == "msp":
         output = SpectrumExporter.export_to_msp(predicted_spectra, base_name)
 
-    max_number_of_peaks = max(
-        [len(spectrum.spectrum) for spectrum in predicted_spectra]
-    )  # TODO make that a constant
+    metadata_dfs = []
+    peaks_dfs = []
+    for spectrum in predicted_spectra:
+        metadata_df, peaks_df = spectrum.to_mergeable_df()
+        metadata_dfs.append(metadata_df)
+        peaks_dfs.append(peaks_df)
+
+    combined_metadata_df = pd.concat(metadata_dfs, ignore_index=True)
+    combined_peaks_df = pd.concat(peaks_dfs, ignore_index=True)
+
     return {
         "predicted_spectra": output,
-        "predicted_spectra_df": pd.concat(
-            [
-                spectrum.to_mergeable_df(max_number_of_peaks)
-                for spectrum in predicted_spectra
-            ]
-            if predicted_spectra
-            else pd.DataFrame()
-        ),
+        "predicted_spectra_metadata": combined_metadata_df,
+        "predicted_spectra_peaks": combined_peaks_df,
         "messages": [
             {
                 "level": logging.INFO,
@@ -76,14 +77,24 @@ def predict(
 
 
 def plot_spectrum(
-    prediction_df: pd.DataFrame, peptide: str, charge: int, annotation_threshold: float
+    metadata_df: pd.DataFrame,
+    peaks_df: pd.DataFrame,
+    peptide: str,
+    charge: int,
+    annotation_threshold: float,
 ):
     assert 0 <= annotation_threshold and annotation_threshold <= 1
     b_ion_color, y_ion_color = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
-    spectrum = prediction_df[
-        (prediction_df[DATA_KEYS.PEPTIDE_SEQUENCE] == peptide)
-        & (prediction_df[DATA_KEYS.PRECURSOR_CHARGE] == charge)
-    ]
+
+    # Get the unique_id for the specified peptide and charge
+    unique_id = metadata_df[
+        (metadata_df[DATA_KEYS.PEPTIDE_SEQUENCE] == peptide)
+        & (metadata_df[DATA_KEYS.PRECURSOR_CHARGE] == charge)
+    ]["unique_id"].values[0]
+
+    # Filter the peaks_df for the specific spectrum
+    spectrum = peaks_df[peaks_df["unique_id"] == unique_id]
+
     plot_df = spectrum[
         [
             DATA_KEYS.MZ,
@@ -92,7 +103,8 @@ def plot_spectrum(
             DATA_KEYS.FRAGMENTATION_CHARGE,
         ]
     ]
-    plot_df["fragment_ion"] = [fragment[0] for fragment in plot_df["fragment_type"]]
+    plot_df["fragment_ion"] = plot_df[DATA_KEYS.FRAGMENT_TYPE].str[0]
+
     # Plotting the peaks
     fig = px.bar(
         plot_df,
@@ -118,7 +130,7 @@ def plot_spectrum(
                 if "y" in row[DATA_KEYS.FRAGMENT_TYPE]
                 else b_ion_color
             ),
-            text=f"{row[DATA_KEYS.FRAGMENT_TYPE]} ({row[DATA_KEYS.FRAGMENT_CHARGE]}+)",
+            text=f"{row[DATA_KEYS.FRAGMENT_TYPE]} ({row[DATA_KEYS.FRAGMENTATION_CHARGE]}+)",
             showarrow=False,
             yshift=25,
             textangle=-90,

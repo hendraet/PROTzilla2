@@ -752,7 +752,11 @@ class PredictSpectra(DataAnalysisStep):
         "fragmentation_type",
         "csv_seperator",
     ]
-    output_keys = ["predicted_spectra_df", "predicted_spectra"]
+    output_keys = [
+        "predicted_spectra",
+        "predicted_spectra_metadata",
+        "predicted_spectra_peaks",
+    ]
 
     def method(self, inputs: dict) -> dict:
         return predict(**inputs)

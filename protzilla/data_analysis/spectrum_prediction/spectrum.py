@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 import re
 from typing import Dict, Optional
@@ -45,6 +46,24 @@ class Spectrum:
         if sanitize:
             self._sanitize_spectrum()
 
+        self.unique_id = self._generate_hash()
+
+    def __str__(self):
+        return f"{self.peptide_sequence}: {self.precursor_charge}, {self.spectrum.shape[0]} peaks"
+
+    def _sanitize_spectrum(self):
+        self.spectrum = self.spectrum.drop_duplicates(subset=DATA_KEYS.MZ)
+        self.spectrum = self.spectrum[self.spectrum[DATA_KEYS.INTENSITY] > 0]
+
+    def _generate_hash(self) -> str:
+        """Generate a unique hash based on all metadata of the spectrum."""
+        metadata_str = (
+            f"{self.peptide_sequence}_{self.precursor_charge}_{self.peptide_mz}"
+        )
+        for key, value in sorted(self.metadata.items()):  # Sort for consistency
+            metadata_str += f"_{key}_{value}"
+        return hashlib.md5(metadata_str.encode()).hexdigest()
+
     def __str__(self):
         return f"{self.peptide_sequence}: {self.charge}, {self.spectrum.shape[0]} peaks"
 
@@ -52,24 +71,32 @@ class Spectrum:
         self.spectrum = self.spectrum.drop_duplicates(subset=DATA_KEYS.MZ)
         self.spectrum = self.spectrum[self.spectrum[DATA_KEYS.INTENSITY] > 0]
 
-    def to_mergeable_df(self, number_of_peaks: int = 100):
-        """We will convert the spectrum to a DataFrame in wide format, where each peak is a column."""
-        df_sorted = self.spectrum.sort_values(DATA_KEYS.INTENSITY, ascending=False)
-        data_tuples = list(
-            zip(
-                df_sorted[DATA_KEYS.MZ],
-                df_sorted[DATA_KEYS.INTENSITY],
-                df_sorted[OUTPUT_KEYS.FRAGMENT_TYPE],
-            )
+    def to_mergeable_df(self):
+        """Convert the spectrum to two DataFrames: one for metadata and one for spectrum peaks."""
+        # Create the spectrum peaks DataFrame
+        peaks_df = self.spectrum.copy()
+        peaks_df["unique_id"] = self.unique_id
+
+        # Ensure 'm/z' and 'intensity' are the first columns after 'unique_id'
+        column_order = ["unique_id", DATA_KEYS.MZ, DATA_KEYS.INTENSITY]
+        annotation_columns = [
+            col for col in peaks_df.columns if col not in column_order
+        ]
+        column_order.extend(annotation_columns)
+        peaks_df = peaks_df[column_order]
+
+        # Create the metadata DataFrame
+        metadata_df = pd.DataFrame(
+            {
+                "unique_id": [self.unique_id],
+                DATA_KEYS.PEPTIDE_SEQUENCE: [self.peptide_sequence],
+                DATA_KEYS.PRECURSOR_CHARGE: [self.precursor_charge],
+                DATA_KEYS.PEPTIDE_MZ: [self.peptide_mz],
+                **{k: [v] for k, v in self.metadata.items()},
+            }
         )
-        padded_data = data_tuples + [(0, 0)] * (number_of_peaks - len(data_tuples))
-        padded_data = padded_data[:number_of_peaks]
-        uniform_df = pd.DataFrame([padded_data])
-        uniform_df.columns = [f"peak_{i}" for i in range(1, number_of_peaks + 1)]
-        uniform_df[DATA_KEYS.PEPTIDE_SEQUENCE] = self.peptide_sequence
-        uniform_df[DATA_KEYS.PRECURSOR_CHARGE] = self.precursor_charge
-        uniform_df[DATA_KEYS.PEPTIDE_MZ] = self.peptide_mz
-        return uniform_df
+
+        return metadata_df, peaks_df
 
 
 class SpectrumPredictor:
