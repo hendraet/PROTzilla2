@@ -706,6 +706,7 @@ class FLEXIQuantLF(PlotStep):
         "peptide_df",
         "metadata_df",
         "reference_group",
+        "grouping_column",
         "protein_id",
         "num_init",
         "mod_cutoff",

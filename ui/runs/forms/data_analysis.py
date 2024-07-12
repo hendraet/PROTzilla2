@@ -1007,7 +1007,7 @@ class FLEXIQuantLFForm(MethodForm):
     def fill_form(self, run: Run) -> None:
         self.fields["peptide_df"].choices = fill_helper.get_choices(run, "peptide_df")
         self.fields["grouping_column"].choices = fill_helper.to_choices(
-            run.steps.metadata_df.drop("Sample", axis=1).columns[1:]
+            run.steps.metadata_df.drop("Sample", axis=1).columns
         )
 
         chosen_grouping_column = self.data.get(
