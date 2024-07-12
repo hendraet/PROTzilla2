@@ -69,7 +69,7 @@ class YamlOperator:
                 yaml.dump(data, file)
 
 
-class OutputFileOperator:
+class FileOutputOperator:
     @staticmethod
     def write(file_path: Path, data: bytes):
         with ErrorHandler():
@@ -90,7 +90,7 @@ class OutputFileOperator:
                 content = file.read()
                 return FileOutput(
                     base_file_name=file_path.stem,
-                    file_extension=file_path.suffix,
+                    file_extension=file_path.suffix[1:],
                     content=content,
                 )
 
@@ -100,7 +100,7 @@ class DataFrameOperator:
     def read(file_path: Path):
         with ErrorHandler():
             logger.info(f"Reading dataframe from {file_path}")
-            return pd.read_csv(file_path)
+            return pd.read_csv(file_path, index_col=0)
 
     @staticmethod
     def write(file_path: Path, dataframe: pd.DataFrame):
@@ -111,7 +111,7 @@ class DataFrameOperator:
                 )
                 return
             logger.info(f"Writing dataframe to {file_path}")
-            dataframe.to_csv(file_path, index=False)
+            dataframe.to_csv(file_path, index=True)
 
 
 RUN_FILE = "run.yaml"
@@ -139,7 +139,7 @@ class DiskOperator:
         self.workflow_name = workflow_name
         self.yaml_operator = YamlOperator()
         self.dataframe_operator = DataFrameOperator()
-        self.outputfile_operator = OutputFileOperator()
+        self.outputfile_operator = FileOutputOperator()
 
     def read_run(self, file: Path | None = None) -> StepManager:
         with ErrorHandler():
@@ -214,10 +214,21 @@ class DiskOperator:
         # have recently been (re)calculcated, therefore invalidating the existing file
         if steps.current_step.instance_identifier in file.name:
             return False
-        return any(
-            step.instance_identifier in file.name and step.finished
-            for step in steps.all_steps
-        )
+        for step in steps.all_steps:
+            if not step.finished:
+                continue
+            if step.instance_identifier in file.name:
+                return True
+            for output_key, output in step.output:
+                if isinstance(output, FileOutput) and output.filename in file.name:
+                    return True
+                if (
+                    isinstance(output, str)
+                    and utilities.check_is_path(output)
+                    and output in file.name
+                ):
+                    return True
+        return False
 
     def clean_dataframes_dir(self, steps: StepManager) -> None:
         with ErrorHandler():
@@ -298,10 +309,7 @@ class DiskOperator:
                     self.dataframe_operator.write(file_path, value)
                     output_data[key] = str(file_path)
                 elif isinstance(value, FileOutput):
-                    file_path = (
-                        self.dataframe_dir
-                        / f"{value.base_file_name}.{value.file_extension}"
-                    )
+                    file_path = self.dataframe_dir / f"{value.filename}"
                     self.outputfile_operator.write(file_path, value.content)
                     output_data[key] = str(file_path)
                 else:

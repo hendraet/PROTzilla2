@@ -992,7 +992,7 @@ class PredictSpectraForm(MethodForm):
     is_dynamic = True
     model_name = CustomChoiceField(
         choices=fill_helper.to_choices(spu.MODEL_METADATA.keys()),
-        label="Choose the Prosit model to predict with",
+        label="Choose the deep learning model to predict with",
     )
     model_info = TextDisplayField(
         label="Model info", text=""
@@ -1019,7 +1019,7 @@ class PredictSpectraForm(MethodForm):
         ),
     )
     csv_seperator = CustomChoiceField(
-        label="CSV seperator",
+        label="Output file column seperator",
         choices=fill_helper.to_choices([",", ";", r"\t"]),
     )
 
@@ -1030,7 +1030,7 @@ class PredictSpectraForm(MethodForm):
         show_fragmentation_type = (
             current_model == spu.AVAILABLE_MODELS.PrositIntensityTMT
         )
-        show_csv_seperator = current_output_format == spu.AVAILABLE_FORMATS.CSV
+        show_csv_seperator = current_output_format == spu.AVAILABLE_FORMATS.CSV_TSV
         self.fields["model_info"].update_text(
             spu.formatted_citation_dict[current_model]
         )
@@ -1040,6 +1040,9 @@ class PredictSpectraForm(MethodForm):
 
 
 class PlotPredictedSpectraForm(MethodForm):
+    is_dynamic = True
+    import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils as spu
+
     prediction_df_step_instance = CustomChoiceField(
         choices=[],
         label="Choose the prediction dataframe",
@@ -1055,7 +1058,7 @@ class PlotPredictedSpectraForm(MethodForm):
     )
 
     annotation_threshold = CustomFloatField(
-        label="Annotation threshold",
+        label="Annotation threshold (peaks with intensity below this value will not be annotated)",
         min_value=0.0,
         max_value=1,
         step_size=0.01,
@@ -1064,7 +1067,7 @@ class PlotPredictedSpectraForm(MethodForm):
 
     def fill_form(self, run: Run) -> None:
         self.fields["prediction_df_step_instance"].choices = fill_helper.get_choices(
-            run, "predicted_spectra_df", Step
+            run, spu.OUTPUTS_predict_func.predicted_spectra, Step
         )
         prediction_df_instance = self.data.get(
             "input_df", self.fields["prediction_df_step_instance"].choices[0][0]
@@ -1073,11 +1076,13 @@ class PlotPredictedSpectraForm(MethodForm):
             raise ValueError("No prediction dataframe found")
 
         prediction_df = run.steps.get_step_output(
-            Step, "predicted_spectra_df", prediction_df_instance
+            Step,
+            spu.OUTPUTS_predict_func.predicted_spectra_metadata,
+            prediction_df_instance,
         )
 
         self.fields["peptide"].choices = fill_helper.to_choices(
-            sorted(prediction_df["Sequence"].unique())
+            sorted(prediction_df[spu.DATA_KEYS.PEPTIDE_SEQUENCE].unique())
         )
 
         peptide_sequence = self.data.get(
@@ -1088,9 +1093,9 @@ class PlotPredictedSpectraForm(MethodForm):
             raise ValueError("No peptide found")
 
         self.fields["charge"].choices = fill_helper.to_choices(
-            prediction_df[prediction_df["Sequence"] == peptide_sequence][
-                "Charge"
-            ].unique()
+            prediction_df[
+                prediction_df[spu.DATA_KEYS.PEPTIDE_SEQUENCE] == peptide_sequence
+            ][spu.DATA_KEYS.PRECURSOR_CHARGE].unique()
         )
 
 

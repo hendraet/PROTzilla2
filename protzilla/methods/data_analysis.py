@@ -751,6 +751,7 @@ class PredictSpectra(DataAnalysisStep):
         "normalized_collision_energy",
         "fragmentation_type",
         "csv_seperator",
+        "output_dir",
     ]
     output_keys = [
         "predicted_spectra",
@@ -763,6 +764,7 @@ class PredictSpectra(DataAnalysisStep):
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["peptide_df"] = steps.get_step_output(Step, "peptide_df")
+        inputs["output_dir"] = steps.disk_operator.dataframe_dir.absolute()
         return inputs
 
 
@@ -771,16 +773,27 @@ class PlotPredictedSpectra(PlotStep):
     operation = "plot"
     method_description = "Plot the predicted spectrum of a peptide"
 
-    input_keys = ["prediction_df", "peptide", "charge", "annotation_threshold"]
+    input_keys = [
+        "metadata_df",
+        "peaks_df",
+        "peptide",
+        "charge",
+        "annotation_threshold",
+    ]
     output_keys = []
 
     def method(self, inputs: dict) -> dict:
         return plot_spectrum(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
-        inputs["prediction_df"] = steps.get_step_output(
+        inputs["metadata_df"] = steps.get_step_output(
             Step,
-            "predicted_spectra_df",
+            "predicted_spectra_metadata",
+            instance_identifier=inputs["prediction_df_step_instance"],
+        )
+        inputs["peaks_df"] = steps.get_step_output(
+            Step,
+            "predicted_spectra_peaks",
             instance_identifier=inputs["prediction_df_step_instance"],
         )
         inputs["charge"] = int(inputs["charge"])

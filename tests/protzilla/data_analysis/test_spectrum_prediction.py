@@ -11,55 +11,36 @@ from protzilla.data_analysis.spectrum_prediction.spectrum import (
     SpectrumExporter,
 )
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
+    AVAILABLE_FORMATS,
+    AVAILABLE_MODELS,
     CSV_COLUMNS,
     DATA_KEYS,
     FRAGMENTATION_TYPE,
+    MODEL_METADATA,
     OUTPUT_KEYS,
 )
 from protzilla.methods.data_analysis import PredictSpectra
 from protzilla.methods.importing import EvidenceImport
 
-evidence_small = Path(PEPTIDE_TEST_DATA_PATH) / "evidence-vsmall.txt"
-evidence_bad = Path(PEPTIDE_TEST_DATA_PATH) / "evidence-vsmall-invalid-peptides.txt"
-
-
-def evidence_import_run_factory(evidence_file):
-    @pytest.fixture
-    def evidence_import_run(run_imported):
-        run = run_imported
-        run.step_add(EvidenceImport())
-        run.step_next()
-        run.step_calculate(
-            {
-                "file_path": str(evidence_file),
-                "intensity_name": "Intensity",
-                "map_to_uniprot": False,
-            }
-        )
-        assert (
-            "peptide_df" in run.current_outputs
-            and not run.current_outputs["peptide_df"].empty
-        )
-        return run
-
-    return evidence_import_run
-
-
-evidence_import_run_bad_evidence = evidence_import_run_factory(evidence_bad)
-evidence_import_run = evidence_import_run_factory(evidence_small)
+evidence_small = Path(PEPTIDE_TEST_DATA_PATH) / "evidence_100.txt"
 
 
 @pytest.fixture
-def spectrum_prediction_run_bad_evidence(evidence_import_run_bad_evidence):
-    run = evidence_import_run_bad_evidence
-    run.step_add(PredictSpectra())
+def spectrum_prediction_run(run_imported):
+    run = run_imported
+    run.step_add(EvidenceImport())
     run.step_next()
-    return run
-
-
-@pytest.fixture
-def spectrum_prediction_run(evidence_import_run):
-    run = evidence_import_run
+    run.step_calculate(
+        {
+            "file_path": str(evidence_small),
+            "intensity_name": "Intensity",
+            "map_to_uniprot": False,
+        }
+    )
+    assert (
+        "peptide_df" in run.current_outputs
+        and not run.current_outputs["peptide_df"].empty
+    )
     run.step_add(PredictSpectra())
     run.step_next()
     return run
@@ -188,42 +169,197 @@ def expected_tsv_header():
     return "\t".join(CSV_COLUMNS)
 
 
-def test_spectrum_prediction(spectrum_prediction_run):
-    spectrum_prediction_run.step_calculate(
-        {
-            "model_name": "PrositIntensityHCD",
-            "output_format": "msp",
-            "normalized_collision_energy": 30,
-            "fragmentation_type": "HCD",
-            "csv_seperator": ",",
-        }
-    )
-    assert "predicted_spectra_metadata" in spectrum_prediction_run.current_outputs
-    assert "predicted_spectra_peaks" in spectrum_prediction_run.current_outputs
-    return
+# @pytest.mark.parametrize("model_name", [
+#     AVAILABLE_MODELS.PrositIntensityHCD,
+#     AVAILABLE_MODELS.PrositIntensityCID,
+#     AVAILABLE_MODELS.PrositIntensityTimsTOF,
+# ])
+# @pytest.mark.parametrize("output_format", [
+#     AVAILABLE_FORMATS.CSV_TSV,
+#     AVAILABLE_FORMATS.MSP,
+#     AVAILABLE_FORMATS.MGF,
+# ])
+# @pytest.mark.parametrize("csv_separator", [",", ";", "\t"])
+# @pytest.mark.parametrize("fragmentation_type", [FRAGMENTATION_TYPE.HCD, FRAGMENTATION_TYPE.CID])
+# def test_spectrum_prediction(spectrum_prediction_run, model_name, output_format, csv_separator, fragmentation_type):
+#     run = spectrum_prediction_run
+#
+#     # Set up the parameters
+#     params = {
+#         "model_name": model_name,
+#         "output_format": output_format,
+#         "normalized_collision_energy": 30,
+#         "fragmentation_type": fragmentation_type,
+#         "csv_seperator": csv_separator,
+#     }
+#
+#     # Adjust parameters based on model requirements
+#     model_info = MODEL_METADATA[model_name]
+#     required_keys = model_info["required_keys"]
+#
+#     # Run the step calculation
+#     run.step_calculate(params)
+#
+#     # Assert outputs
+#     assert "predicted_spectra_metadata" in run.current_outputs
+#     assert "predicted_spectra_peaks" in run.current_outputs
+#
+#     # Check if the output file is generated
+#     if output_format == AVAILABLE_FORMATS.CSV_TSV:
+#         assert "predicted_spectra" in run.current_outputs
+#         file_output = run.current_outputs["predicted_spectra"]
+#         assert file_output.file_extension in ["csv", "tsv"]
+#         if csv_separator == "\t":
+#             assert file_output.file_extension == "tsv"
+#         else:
+#             assert file_output.file_extension == "csv"
+#     elif output_format == AVAILABLE_FORMATS.MSP:
+#         assert "predicted_spectra" in run.current_outputs
+#         assert run.current_outputs["predicted_spectra"].file_extension == "msp"
+#     elif output_format == AVAILABLE_FORMATS.MGF:
+#         assert "predicted_spectra" in run.current_outputs
+#         assert run.current_outputs["predicted_spectra"].file_extension == "mgf"
+#
+#     # Additional assertions can be added here to check the content of the output files or dataframes
+#
+#     # Check if any error messages were generated
+#     assert not any(msg["level"] == "ERROR" for msg in run.current_messages)
 
 
-def test_spectrum_prediction_with_invalid_peptides(
-    spectrum_prediction_run_bad_evidence,
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        AVAILABLE_MODELS.PrositIntensityHCD,
+        AVAILABLE_MODELS.PrositIntensityCID,
+        AVAILABLE_MODELS.PrositIntensityTimsTOF,
+    ],
+)
+@pytest.mark.parametrize(
+    "output_format",
+    [
+        AVAILABLE_FORMATS.CSV_TSV,
+        AVAILABLE_FORMATS.MSP,
+        AVAILABLE_FORMATS.MGF,
+    ],
+)
+@pytest.mark.parametrize("csv_separator", [",", ";", "\t"])
+@pytest.mark.parametrize(
+    "fragmentation_type", [FRAGMENTATION_TYPE.HCD, FRAGMENTATION_TYPE.CID]
+)
+def test_spectrum_prediction(
+    spectrum_prediction_run,
+    model_name,
+    output_format,
+    csv_separator,
+    fragmentation_type,
 ):
-    spectrum_prediction_run_bad_evidence.step_calculate(
-        {
-            "model_name": "PrositIntensityHCD",
-            "output_format": "msp",
-            "normalized_collision_energy": 30,
-            "fragmentation_type": "HCD",
-            "csv_seperator": ",",
-        }
+    run = spectrum_prediction_run
+
+    # Set up the parameters
+    params = {
+        "model_name": model_name,
+        "output_format": output_format,
+        "normalized_collision_energy": 30,
+        "fragmentation_type": fragmentation_type,
+        "csv_seperator": csv_separator,
+    }
+
+    # Adjust parameters based on model requirements
+    model_info = MODEL_METADATA[model_name]
+    required_keys = model_info["required_keys"]
+
+    # Run the step calculation
+    run.step_calculate(params)
+
+    # Assert outputs
+    assert "predicted_spectra_metadata" in run.current_outputs
+    assert "predicted_spectra_peaks" in run.current_outputs
+
+    metadata_df = run.current_outputs["predicted_spectra_metadata"]
+    peaks_df = run.current_outputs["predicted_spectra_peaks"]
+
+    # Check metadata DataFrame
+    assert not metadata_df.empty
+    for key in required_keys:
+        assert key in metadata_df.columns
+    assert DATA_KEYS.PEPTIDE_MZ in metadata_df.columns
+
+    # Check peaks DataFrame
+    assert not peaks_df.empty
+    assert DATA_KEYS.MZ in peaks_df.columns
+    assert DATA_KEYS.INTENSITY in peaks_df.columns
+    assert OUTPUT_KEYS.FRAGMENT_TYPE in peaks_df.columns
+    assert OUTPUT_KEYS.FRAGMENT_CHARGE in peaks_df.columns
+
+    # Check if the output file is generated
+    assert "predicted_spectra" in run.current_outputs
+    if output_format == AVAILABLE_FORMATS.CSV_TSV:
+        file_output = run.current_outputs["predicted_spectra"]
+        assert file_output.file_extension in ["csv", "tsv"]
+        if csv_separator == "\t":
+            assert file_output.file_extension == "tsv"
+        else:
+            assert file_output.file_extension == "csv"
+
+        # Check CSV/TSV content
+        content = file_output.content
+        assert content.startswith(csv_separator.join(CSV_COLUMNS))
+        assert len(content.splitlines()) > 1  # At least header and one data row
+    elif output_format == AVAILABLE_FORMATS.MSP:
+        file_output = run.current_outputs["predicted_spectra"]
+        assert file_output.file_extension == "msp"
+
+        # Check MSP content
+        content = file_output.content
+        assert "Name:" in content
+        assert "Num Peaks:" in content
+    elif output_format == AVAILABLE_FORMATS.MGF:
+        file_output = run.current_outputs["predicted_spectra"]
+        assert file_output.file_extension == "mgf"
+
+        # Check MGF content
+        content = file_output.content
+        assert "BEGIN IONS" in content
+        assert "TITLE=" in content
+        assert "PEPMASS=" in content
+        assert "CHARGE=" in content
+        assert "END IONS" in content
+
+    # Check if any error messages were generated
+    assert not any(msg["level"] == "ERROR" for msg in run.current_messages)
+
+    # Check if the number of predicted spectra matches the number of input peptides
+    num_input_peptides = len(metadata_df)
+    num_predicted_spectra = len(set(peaks_df.index))
+    assert num_input_peptides == num_predicted_spectra
+
+    # Check if the fragmentation type is correctly applied (if applicable)
+    if DATA_KEYS.FRAGMENTATION_TYPE in metadata_df.columns:
+        assert all(metadata_df[DATA_KEYS.FRAGMENTATION_TYPE] == fragmentation_type)
+
+    # Check if the collision energy is correctly applied (if applicable)
+    if DATA_KEYS.COLLISION_ENERGY in metadata_df.columns:
+        assert all(
+            metadata_df[DATA_KEYS.COLLISION_ENERGY]
+            == params["normalized_collision_energy"]
+        )
+
+    # Check if the peaks are valid
+    assert all(peaks_df[DATA_KEYS.MZ] > 0)
+    assert all(
+        (peaks_df[DATA_KEYS.INTENSITY] >= 0) & (peaks_df[DATA_KEYS.INTENSITY] <= 1)
     )
-    assert (
-        "predicted_spectra_peaks"
-        in spectrum_prediction_run_bad_evidence.current_outputs
+
+    # Check if fragment types are valid
+    # TODO account for more fragment types
+    valid_fragment_types = set(["b", "y"])  # Add more if needed
+
+    assert set(peaks_df[OUTPUT_KEYS.FRAGMENT_TYPE].str[0]).issubset(
+        valid_fragment_types
     )
-    assert (
-        "predicted_spectra_metadata"
-        in spectrum_prediction_run_bad_evidence.current_outputs
-    )
-    return
+
+    # Check if fragment charges are valid
+    assert all(peaks_df[OUTPUT_KEYS.FRAGMENT_CHARGE].astype(int) > 0)
 
 
 def test_preprocess_renames_columns_correctly(prediction_df_complete):
@@ -498,14 +634,6 @@ def test_peak_annotation_with_custom_prefix_suffix():
     assert result == expected
 
 
-import pytest
-
-from protzilla.data_analysis.spectrum_prediction.spectrum import (
-    Spectrum,
-    SpectrumExporter,
-)
-
-
 def test_export_to_msp_with_valid_spectra(spectrum_one, spectrum_two):
     spectra = [spectrum_one, spectrum_two]
     base_file_name = "test_file"
@@ -534,20 +662,12 @@ def test_export_to_msp_with_none_metadata(spectrum_none_metadata):
     assert "Parent=" not in result.content
 
 
-import pytest
-
-from protzilla.data_analysis.spectrum_prediction.spectrum import (
-    Spectrum,
-    SpectrumExporter,
-)
-
-
 def test_export_to_csv_with_valid_spectra(
     spectrum_one, spectrum_two, expected_csv_header
 ):
     spectra = [spectrum_one, spectrum_two]
     base_file_name = "test_file"
-    result = SpectrumExporter.export_to_csv(spectra, base_file_name)
+    result = SpectrumExporter.export_to_generic_text(spectra, base_file_name)
     assert result.file_extension == "csv"
     assert result.base_file_name == base_file_name
     assert result.filename == "test_file.csv"
@@ -559,7 +679,7 @@ def test_export_to_csv_with_valid_spectra(
 def test_export_to_csv_with_empty_spectra(expected_csv_header):
     spectra = []
     base_file_name = "test_file"
-    result = SpectrumExporter.export_to_csv(spectra, base_file_name)
+    result = SpectrumExporter.export_to_generic_text(spectra, base_file_name)
     assert result.filename == "test_file.csv"
     assert expected_csv_header in result.content
 
@@ -568,24 +688,18 @@ def test_export_to_csv_with_invalid_separator(spectrum_one):
     spectra = [spectrum_one]
     base_file_name = "test_file"
     with pytest.raises(ValueError):
-        SpectrumExporter.export_to_csv(spectra, base_file_name, seperator="*")
+        SpectrumExporter.export_to_generic_text(spectra, base_file_name, seperator="*")
 
 
 def test_export_to_csv_with_tab_separator(spectrum_one, expected_tsv_header):
     spectra = [spectrum_one]
     base_file_name = "test_file"
-    result = SpectrumExporter.export_to_csv(spectra, base_file_name, seperator="\t")
+    result = SpectrumExporter.export_to_generic_text(
+        spectra, base_file_name, seperator="\t"
+    )
     assert result.file_extension == "tsv"
     assert expected_tsv_header in result.content
     assert "sequence1\t1.0\t1\t" in result.content
-
-
-import pytest
-
-from protzilla.data_analysis.spectrum_prediction.spectrum import (
-    Spectrum,
-    SpectrumExporter,
-)
 
 
 def test_export_to_mgf_with_valid_spectra(spectrum_one, spectrum_two):

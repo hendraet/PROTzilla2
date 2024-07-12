@@ -140,7 +140,9 @@ class TextDisplayWidget(forms.Widget):
 
     def render(self, name, value, attrs=None, renderer=None):
         display_text = self.attrs.get("data-display-text", "")
-        return mark_safe(f"<div class=form-control mb-2>{display_text}</div>")
+        return mark_safe(
+            f"<div class=form-control mb-2 style='font-size: 0.8rem;'>{display_text}</div>"
+        )
 
 
 class TextDisplayField(forms.Field):

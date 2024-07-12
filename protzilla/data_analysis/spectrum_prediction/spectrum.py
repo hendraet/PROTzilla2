@@ -16,6 +16,7 @@ from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils impor
     DATA_KEYS,
     MODEL_METADATA,
     OUTPUT_KEYS,
+    calculate_peptide_mass,
 )
 from protzilla.disk_operator import FileOutput
 
@@ -66,8 +67,8 @@ class Spectrum:
         self.metadata.setdefault(DATA_KEYS.PEPTIDE_SEQUENCE, self.peptide_sequence)
         self.metadata.setdefault(DATA_KEYS.PRECURSOR_CHARGE, self.precursor_charge)
         self.metadata.setdefault(DATA_KEYS.PEPTIDE_MZ, self.peptide_mz)
-        self.metadata.setdefault(DATA_KEYS.COLLISION_ENERGY, None)
-        self.metadata.setdefault(DATA_KEYS.FRAGMENTATION_TYPE, None)
+        # self.metadata.setdefault(DATA_KEYS.COLLISION_ENERGY, None) # TODO delete if not necessary
+        # self.metadata.setdefault(DATA_KEYS.FRAGMENTATION_TYPE, None)
 
     def __str__(self):
         return f"{self.peptide_sequence}: {self.charge}, {self.spectrum.shape[0]} peaks"
@@ -97,8 +98,14 @@ class Spectrum:
                 **{k: [v] for k, v in self.metadata.items()},
             }
         )
-
+        # set index to unique_id as to hide it in the output and not confuse biologists
+        metadata_df.set_index("unique_id", inplace=True)
+        peaks_df.set_index("unique_id", inplace=True)
         return metadata_df, peaks_df
+
+    @property
+    def peptide_mass(self):
+        return calculate_peptide_mass(self.peptide_mz, self.precursor_charge)
 
 
 class SpectrumPredictor:
@@ -130,6 +137,7 @@ class KoinaModel(SpectrumPredictor):
         super().__init__(prediction_df)
         self.required_keys = required_keys
         self.KOINA_URL = url
+        self.preprocess_args = kwargs.get("preprocess_args", {})
         if prediction_df is not None:
             self.load_prediction_df(prediction_df)
 
@@ -152,10 +160,15 @@ class KoinaModel(SpectrumPredictor):
             .drop_duplicates()
             .reset_index(drop=True)
         )
+
         self.prediction_df = self.prediction_df[
-            self.prediction_df[DATA_KEYS.PRECURSOR_CHARGE] <= 5
+            self.prediction_df[DATA_KEYS.PRECURSOR_CHARGE]
+            <= self.preprocess_args.get("max_charge", 5)
         ]
-        # filter all peptides which match a ptm
+        if self.preprocess_args.get("filter_ptms", True):
+            self.filter_ptms()
+
+    def filter_ptms(self):
         self.prediction_df = self.prediction_df[
             ~self.prediction_df[DATA_KEYS.PEPTIDE_SEQUENCE].str.contains(
                 self.ptm_regex, regex=True
@@ -308,6 +321,12 @@ class KoinaModel(SpectrumPredictor):
                     OUTPUT_KEYS.FRAGMENT_CHARGE
                 )[index],
             }
+            metadata = {}
+            if collision_energy:
+                metadata[DATA_KEYS.COLLISION_ENERGY] = collision_energy
+            if fragmentation_type:
+                metadata[DATA_KEYS.FRAGMENTATION_TYPE] = fragmentation_type
+
             return Spectrum(
                 peptide_sequence=peptide_sequence,
                 charge=precursor_charge,
@@ -315,10 +334,7 @@ class KoinaModel(SpectrumPredictor):
                 mz_values=mz_values,
                 intensity_values=intensity_values,
                 annotations=peak_annotations,
-                metadata={
-                    DATA_KEYS.COLLISION_ENERGY: collision_energy,
-                    DATA_KEYS.FRAGMENTATION_TYPE: fragmentation_type,
-                },
+                metadata=metadata,
             )
         except (KeyError, TypeError) as e:
             raise ValueError(f"Error while creating spectrum: {e}")
@@ -434,7 +450,7 @@ class SpectrumExporter:
     csv_fragment_pattern = re.compile(r"([yb])(\d+)")
 
     @staticmethod
-    def export_to_csv(
+    def export_to_generic_text(
         spectra: list[Spectrum], base_file_name: str, seperator: str = ","
     ):
         """Converts to generic text, see
@@ -501,11 +517,11 @@ class SpectrumExporter:
             header = (
                 f"BEGIN IONS\n"
                 f"TITLE={spectrum.peptide_sequence}\n"
-                f"PEPMASS={spectrum.peptide_mz / spectrum.precursor_charge}\n"  # TODO THIS IS NOT EXACTLY CORRECT
+                f"PEPMASS={spectrum.peptide_mass}\n"
                 f"CHARGE={spectrum.precursor_charge}+\n"
             )
-            peaks = "".join(SpectrumExporter._format_peaks_for_mgf(spectrum.spectrum))
-            lines.append(f"{header}\n{peaks}\nEND IONS\n")
+            peaks = "\n".join(SpectrumExporter._format_peaks_for_mgf(spectrum.spectrum))
+            lines.append(f"{header}\n{peaks}\n\nEND IONS\n")
 
         logger.info(
             f"Exported {len(spectra)} spectra to MGF format, now combining them"

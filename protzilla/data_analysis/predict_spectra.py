@@ -22,6 +22,8 @@ def predict(
     normalized_collision_energy: Optional[float] = None,
     fragmentation_type: Optional[str] = None,
     csv_seperator: Optional[str] = ",",
+    output_dir: Optional[str] = None,
+    # this is to clarify in the returned message where the user can find the output file
 ):
     # First order of business: rename the columns to the expected names
     peptide_df = peptide_df.rename(
@@ -41,8 +43,8 @@ def predict(
             ]
         ]
         .drop_duplicates()
-        .copy()[::10]
-    )  # TODO this is only for testing, remove
+        .copy()
+    )
     prediction_df[DATA_KEYS.COLLISION_ENERGY] = normalized_collision_energy
     prediction_df[DATA_KEYS.FRAGMENTATION_TYPE] = fragmentation_type
     predictor = SpectrumPredictorFactory.create_predictor(model_name)
@@ -50,7 +52,9 @@ def predict(
     predicted_spectra = predictor.predict()
     base_name = "predicted_spectra"
     if output_format == AVAILABLE_FORMATS.CSV_TSV:
-        output = SpectrumExporter.export_to_csv(predicted_spectra, base_name)
+        output = SpectrumExporter.export_to_generic_text(
+            predicted_spectra, base_name, csv_seperator
+        )
     elif output_format == AVAILABLE_FORMATS.MSP:
         output = SpectrumExporter.export_to_msp(predicted_spectra, base_name)
     elif output_format == AVAILABLE_FORMATS.MGF:
@@ -63,8 +67,8 @@ def predict(
         metadata_dfs.append(metadata_df)
         peaks_dfs.append(peaks_df)
 
-    combined_metadata_df = pd.concat(metadata_dfs, ignore_index=True)
-    combined_peaks_df = pd.concat(peaks_dfs, ignore_index=True)
+    combined_metadata_df = pd.concat(metadata_dfs)
+    combined_peaks_df = pd.concat(peaks_dfs)
 
     return {
         "predicted_spectra": output,
@@ -73,7 +77,7 @@ def predict(
         "messages": [
             {
                 "level": logging.INFO,
-                "msg": f"Successfully predicted {len(predicted_spectra)} spectra.",
+                "msg": f"Successfully predicted {len(predicted_spectra)} spectra. The output can be found at {output_dir if output_dir else 'the dataframe folder of the run'}.",
             }
         ],
     }
@@ -87,23 +91,24 @@ def plot_spectrum(
     annotation_threshold: float,
 ):
     assert 0 <= annotation_threshold and annotation_threshold <= 1
+    # TODO support a/x b/y and c/z ions for colors
     b_ion_color, y_ion_color = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 
     # Get the unique_id for the specified peptide and charge
     unique_id = metadata_df[
         (metadata_df[DATA_KEYS.PEPTIDE_SEQUENCE] == peptide)
         & (metadata_df[DATA_KEYS.PRECURSOR_CHARGE] == charge)
-    ]["unique_id"].values[0]
+    ].index
 
     # Filter the peaks_df for the specific spectrum
-    spectrum = peaks_df[peaks_df["unique_id"] == unique_id]
+    spectrum = peaks_df.loc[unique_id]
 
     plot_df = spectrum[
         [
             DATA_KEYS.MZ,
             DATA_KEYS.INTENSITY,
             DATA_KEYS.FRAGMENT_TYPE,
-            DATA_KEYS.FRAGMENTATION_CHARGE,
+            DATA_KEYS.FRAGMENT_CHARGE,
         ]
     ]
     plot_df["fragment_ion"] = plot_df[DATA_KEYS.FRAGMENT_TYPE].str[0]
@@ -113,8 +118,8 @@ def plot_spectrum(
         plot_df,
         x=DATA_KEYS.MZ,
         y=DATA_KEYS.INTENSITY,
-        hover_data=[DATA_KEYS.FRAGMENT_TYPE, DATA_KEYS.FRAGMENTATION_CHARGE],
-        labels={"x": "m/z", "y": "Relative intensity"},
+        hover_data=[DATA_KEYS.FRAGMENT_TYPE, DATA_KEYS.FRAGMENT_CHARGE],
+        labels={DATA_KEYS.MZ: "m/z", DATA_KEYS.INTENSITY: "Relative intensity"},
         color="fragment_ion",
         color_discrete_map={"b": b_ion_color, "y": y_ion_color},
         title=f"{peptide} ({charge}+)",
@@ -133,7 +138,7 @@ def plot_spectrum(
                 if "y" in row[DATA_KEYS.FRAGMENT_TYPE]
                 else b_ion_color
             ),
-            text=f"{row[DATA_KEYS.FRAGMENT_TYPE]} ({row[DATA_KEYS.FRAGMENTATION_CHARGE]}+)",
+            text=f"{row[DATA_KEYS.FRAGMENT_TYPE]} ({row[DATA_KEYS.FRAGMENT_CHARGE]}+)",
             showarrow=False,
             yshift=25,
             textangle=-90,
@@ -147,4 +152,12 @@ def plot_spectrum(
     )
     # Replace title of legend with "Fragment type"
     fig.update_layout(legend_title_text="Fragment type")
-    return dict(plots=[fig])
+    return dict(
+        plots=[fig],
+        messages=[
+            {
+                "level": logging.INFO,
+                "msg": f"Successfully plotted the spectrum for {peptide} ({charge}+). Tip: You can zoom in by selecting an area on the plot.",
+            }
+        ],
+    )
