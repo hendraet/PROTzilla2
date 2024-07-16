@@ -10,54 +10,67 @@ from protzilla.data_analysis.spectrum_prediction.spectrum import (
     SpectrumPredictorFactory,
 )
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
-    AVAILABLE_FORMATS,
-    DATA_KEYS,
+    DataKeys,
+    FragmentationType,
+    GenericTextSeparator,
+    OutputFormats,
+    PredictionModels,
 )
 
 
 def predict(
-    model_name: str,
+    model_name: PredictionModels,
     peptide_df: pd.DataFrame,
-    output_format: str,
-    normalized_collision_energy: Optional[float] = None,
-    fragmentation_type: Optional[str] = None,
-    csv_seperator: Optional[str] = ",",
+    output_format: OutputFormats,
+    normalized_collision_energy: Optional[float],
+    fragmentation_type: Optional[FragmentationType],
+    column_seperator: Optional[GenericTextSeparator],
     output_dir: Optional[str] = None,
-    # this is to clarify in the returned message where the user can find the output file
 ):
+    """
+    Predicts the spectra for the given peptides using the specified model.
+    :param model_name: the model to use
+    :param peptide_df: the result of the evidence import, containing the peptide sequences, charges and m/z values
+    :param output_format: output format of the spectral predictions
+    :param normalized_collision_energy: the normalized collision energy for which to predict the spectra
+    :param fragmentation_type: the type of ms fragmentation for which to predict the spectra
+    :param column_seperator: the column separator to use in case the output format is generic text
+    :param output_dir: the directory to save the output to, this will just be shown to the user in the return message so he knows where to find the output
+    :return: a dictionary containing the output file, metadata and peaks dataframes of the predicted spectra and a message
+    """
     # First order of business: rename the columns to the expected names
     peptide_df = peptide_df.rename(
         columns={
-            "Sequence": DATA_KEYS.PEPTIDE_SEQUENCE,
-            "Charge": DATA_KEYS.PRECURSOR_CHARGE,
-            "m/z": DATA_KEYS.PEPTIDE_MZ,
+            "Sequence": DataKeys.PEPTIDE_SEQUENCE,
+            "Charge": DataKeys.PRECURSOR_CHARGE,
+            "m/z": DataKeys.PEPTIDE_MZ,
         },
         errors="ignore",
     )
     prediction_df = (
         peptide_df[
             [
-                DATA_KEYS.PEPTIDE_SEQUENCE,
-                DATA_KEYS.PRECURSOR_CHARGE,
-                DATA_KEYS.PEPTIDE_MZ,
+                DataKeys.PEPTIDE_SEQUENCE,
+                DataKeys.PRECURSOR_CHARGE,
+                DataKeys.PEPTIDE_MZ,
             ]
         ]
         .drop_duplicates()
         .copy()
     )
-    prediction_df[DATA_KEYS.COLLISION_ENERGY] = normalized_collision_energy
-    prediction_df[DATA_KEYS.FRAGMENTATION_TYPE] = fragmentation_type
+    prediction_df[DataKeys.COLLISION_ENERGY] = normalized_collision_energy
+    prediction_df[DataKeys.FRAGMENTATION_TYPE] = fragmentation_type
     predictor = SpectrumPredictorFactory.create_predictor(model_name)
     predictor.load_prediction_df(prediction_df)
     predicted_spectra = predictor.predict()
     base_name = "predicted_spectra"
-    if output_format == AVAILABLE_FORMATS.CSV_TSV:
+    if output_format == OutputFormats.CSV_TSV:
         output = SpectrumExporter.export_to_generic_text(
-            predicted_spectra, base_name, csv_seperator
+            predicted_spectra, base_name, column_seperator
         )
-    elif output_format == AVAILABLE_FORMATS.MSP:
+    elif output_format == OutputFormats.MSP:
         output = SpectrumExporter.export_to_msp(predicted_spectra, base_name)
-    elif output_format == AVAILABLE_FORMATS.MGF:
+    elif output_format == OutputFormats.MGF:
         output = SpectrumExporter.export_to_mgf(predicted_spectra, base_name)
 
     metadata_dfs = []
@@ -91,13 +104,11 @@ def plot_spectrum(
     annotation_threshold: float,
 ):
     assert 0 <= annotation_threshold and annotation_threshold <= 1
-    # TODO support a/x b/y and c/z ions for colors
-    b_ion_color, y_ion_color = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 
     # Get the unique_id for the specified peptide and charge
     unique_id = metadata_df[
-        (metadata_df[DATA_KEYS.PEPTIDE_SEQUENCE] == peptide)
-        & (metadata_df[DATA_KEYS.PRECURSOR_CHARGE] == charge)
+        (metadata_df[DataKeys.PEPTIDE_SEQUENCE] == peptide)
+        & (metadata_df[DataKeys.PRECURSOR_CHARGE] == charge)
     ].index
 
     # Filter the peaks_df for the specific spectrum
@@ -105,40 +116,47 @@ def plot_spectrum(
 
     plot_df = spectrum[
         [
-            DATA_KEYS.MZ,
-            DATA_KEYS.INTENSITY,
-            DATA_KEYS.FRAGMENT_TYPE,
-            DATA_KEYS.FRAGMENT_CHARGE,
+            DataKeys.MZ,
+            DataKeys.INTENSITY,
+            DataKeys.FRAGMENT_TYPE,
+            DataKeys.FRAGMENT_CHARGE,
         ]
     ]
-    plot_df["fragment_ion"] = plot_df[DATA_KEYS.FRAGMENT_TYPE].str[0]
+    plot_df["fragment_ion"] = plot_df[DataKeys.FRAGMENT_TYPE].str[0]
+
+    ion_color = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    ion_types = plot_df[DataKeys.FRAGMENT_TYPE].str[0].unique()
+    if len(ion_types) != 2:
+        raise ValueError(
+            f"Expected exactly two fragment types, but got {len(ion_types)}: {ion_types}"
+        )
 
     # Plotting the peaks
     fig = px.bar(
         plot_df,
-        x=DATA_KEYS.MZ,
-        y=DATA_KEYS.INTENSITY,
-        hover_data=[DATA_KEYS.FRAGMENT_TYPE, DATA_KEYS.FRAGMENT_CHARGE],
-        labels={DATA_KEYS.MZ: "m/z", DATA_KEYS.INTENSITY: "Relative intensity"},
+        x=DataKeys.MZ,
+        y=DataKeys.INTENSITY,
+        hover_data=[DataKeys.FRAGMENT_TYPE, DataKeys.FRAGMENT_CHARGE],
+        labels={DataKeys.MZ: "m/z", DataKeys.INTENSITY: "Relative intensity"},
         color="fragment_ion",
-        color_discrete_map={"b": b_ion_color, "y": y_ion_color},
+        color_discrete_map={ion_types[0]: ion_color[0], ion_types[1]: ion_color[1]},
         title=f"{peptide} ({charge}+)",
     )
     fig.update_traces(width=3.0)
 
     # Adding the annotations
     for _, row in plot_df.iterrows():
-        if row[DATA_KEYS.INTENSITY] < annotation_threshold:
+        if row[DataKeys.INTENSITY] < annotation_threshold:
             continue
         fig.add_annotation(
-            x=row[DATA_KEYS.MZ],
-            y=row[DATA_KEYS.INTENSITY],
+            x=row[DataKeys.MZ],
+            y=row[DataKeys.INTENSITY],
             font=dict(
-                color=y_ion_color
-                if "y" in row[DATA_KEYS.FRAGMENT_TYPE]
-                else b_ion_color
+                color=ion_color[0]
+                if ion_types[0] in row[DataKeys.FRAGMENT_TYPE]
+                else ion_color[1]
             ),
-            text=f"{row[DATA_KEYS.FRAGMENT_TYPE]} ({row[DATA_KEYS.FRAGMENT_CHARGE]}+)",
+            text=f"{row[DataKeys.FRAGMENT_TYPE]} ({row[DataKeys.FRAGMENT_CHARGE]}+)",
             showarrow=False,
             yshift=25,
             textangle=-90,
@@ -147,7 +165,9 @@ def plot_spectrum(
     # Updating the color legend to say "y" and "b" instead of the color codes
     fig.for_each_trace(
         lambda trace: trace.update(
-            name=trace.name.replace(b_ion_color, "b-ion").replace(y_ion_color, "y-ion")
+            name=trace.name.replace(ion_color[0], f"{ion_types[0]}-ion").replace(
+                ion_color[1], f"{ion_color[1]}-ion"
+            )
         )
     )
     # Replace title of legend with "Fragment type"

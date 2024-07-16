@@ -991,14 +991,14 @@ class ProteinGraphVariationGraphForm(MethodForm):
 class PredictSpectraForm(MethodForm):
     is_dynamic = True
     model_name = CustomChoiceField(
-        choices=fill_helper.to_choices(spu.MODEL_METADATA.keys()),
+        choices=fill_helper.to_choices(spu.PredictionModels),
         label="Choose the deep learning model to predict with",
     )
     model_info = TextDisplayField(
         label="Model info", text=""
     )  # we dynamically fill this in fill_form
     output_format = CustomChoiceField(
-        choices=fill_helper.to_choices(spu.AVAILABLE_FORMATS),
+        choices=fill_helper.to_choices(spu.OutputFormats),
         label="The format of the output file",
     )
     normalized_collision_energy = CustomNumberField(
@@ -1011,26 +1011,21 @@ class PredictSpectraForm(MethodForm):
 
     fragmentation_type = CustomChoiceField(
         label="Fragmentation type",
-        choices=fill_helper.to_choices(
-            [
-                spu.FRAGMENTATION_TYPE.CID,
-                spu.FRAGMENTATION_TYPE.HCD,
-            ]
-        ),
+        choices=fill_helper.to_choices([spu.FragmentationType]),
     )
     csv_seperator = CustomChoiceField(
         label="Output file column seperator",
-        choices=fill_helper.to_choices([",", ";", r"\t"]),
+        choices=fill_helper.to_choices(spu.GenericTextSeparator),
     )
 
     def fill_form(self, run: Run) -> None:
         current_model = self.get_field("model_name")
         current_output_format = self.get_field("output_format")
-        show_nce = current_model != spu.AVAILABLE_MODELS.PrositIntensityCID
+        show_nce = current_model != spu.PredictionModels.PROSITINTENSITYCID
         show_fragmentation_type = (
-            current_model == spu.AVAILABLE_MODELS.PrositIntensityTMT
+            current_model == spu.PredictionModels.PROSITINTENSITYTMT
         )
-        show_csv_seperator = current_output_format == spu.AVAILABLE_FORMATS.CSV_TSV
+        show_csv_seperator = current_output_format == spu.OutputFormats.CSV_TSV
         self.fields["model_info"].update_text(
             spu.formatted_citation_dict[current_model]
         )
@@ -1067,7 +1062,7 @@ class PlotPredictedSpectraForm(MethodForm):
 
     def fill_form(self, run: Run) -> None:
         self.fields["prediction_df_step_instance"].choices = fill_helper.get_choices(
-            run, spu.OUTPUTS_predict_func.predicted_spectra, Step
+            run, spu.OutputsPredictFunction.PREDICTED_SPECTRA, Step
         )
         prediction_df_instance = self.data.get(
             "input_df", self.fields["prediction_df_step_instance"].choices[0][0]
@@ -1077,12 +1072,12 @@ class PlotPredictedSpectraForm(MethodForm):
 
         prediction_df = run.steps.get_step_output(
             Step,
-            spu.OUTPUTS_predict_func.predicted_spectra_metadata,
+            spu.OutputsPredictFunction.PREDICTED_SPECTRA_METADATA,
             prediction_df_instance,
         )
 
         self.fields["peptide"].choices = fill_helper.to_choices(
-            sorted(prediction_df[spu.DATA_KEYS.PEPTIDE_SEQUENCE].unique())
+            sorted(prediction_df[spu.DataKeys.PEPTIDE_SEQUENCE].unique())
         )
 
         peptide_sequence = self.data.get(
@@ -1094,8 +1089,8 @@ class PlotPredictedSpectraForm(MethodForm):
 
         self.fields["charge"].choices = fill_helper.to_choices(
             prediction_df[
-                prediction_df[spu.DATA_KEYS.PEPTIDE_SEQUENCE] == peptide_sequence
-            ][spu.DATA_KEYS.PRECURSOR_CHARGE].unique()
+                prediction_df[spu.DataKeys.PEPTIDE_SEQUENCE] == peptide_sequence
+            ][spu.DataKeys.PRECURSOR_CHARGE].unique()
         )
 
 

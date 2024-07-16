@@ -11,13 +11,13 @@ from protzilla.data_analysis.spectrum_prediction.spectrum import (
     SpectrumExporter,
 )
 from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
-    AVAILABLE_FORMATS,
-    AVAILABLE_MODELS,
     CSV_COLUMNS,
-    DATA_KEYS,
-    FRAGMENTATION_TYPE,
-    MODEL_METADATA,
-    OUTPUT_KEYS,
+    DataKeys,
+    FragmentationType,
+    OutputFormats,
+    OutputKeys,
+    PredictionModelMetadata,
+    PredictionModels,
 )
 from protzilla.methods.data_analysis import PredictSpectra
 from protzilla.methods.importing import EvidenceImport
@@ -50,13 +50,13 @@ def spectrum_prediction_run(run_imported):
 def prediction_df_complete():
     return pd.DataFrame(
         {
-            DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
-            DATA_KEYS.PRECURSOR_CHARGE: [1, 2],
-            DATA_KEYS.COLLISION_ENERGY: [30, 30],
-            DATA_KEYS.PEPTIDE_MZ: [100, 200],
-            DATA_KEYS.FRAGMENTATION_TYPE: [
-                FRAGMENTATION_TYPE.HCD,
-                FRAGMENTATION_TYPE.HCD,
+            DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
+            DataKeys.PRECURSOR_CHARGE: [1, 2],
+            DataKeys.COLLISION_ENERGY: [30, 30],
+            DataKeys.PEPTIDE_MZ: [100, 200],
+            DataKeys.FRAGMENTATION_TYPE: [
+                FragmentationType.HCD,
+                FragmentationType.HCD,
             ],
         }
     )
@@ -66,9 +66,9 @@ def prediction_df_complete():
 def prediction_df_incomplete():
     return pd.DataFrame(
         {
-            DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
-            DATA_KEYS.PRECURSOR_CHARGE: [1, 2],
-            DATA_KEYS.PEPTIDE_MZ: [100, 200],
+            DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
+            DataKeys.PRECURSOR_CHARGE: [1, 2],
+            DataKeys.PEPTIDE_MZ: [100, 200],
         }
     )
 
@@ -77,11 +77,11 @@ def prediction_df_incomplete():
 def prediction_df_large():
     return pd.DataFrame(
         {
-            DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE" + str(i) for i in range(2000)],
-            DATA_KEYS.PRECURSOR_CHARGE: [1 for _ in range(2000)],
-            DATA_KEYS.PEPTIDE_MZ: [100 for _ in range(2000)],
-            DATA_KEYS.COLLISION_ENERGY: [30 for _ in range(2000)],
-            DATA_KEYS.FRAGMENTATION_TYPE: [FRAGMENTATION_TYPE.HCD for _ in range(2000)],
+            DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE" + str(i) for i in range(2000)],
+            DataKeys.PRECURSOR_CHARGE: [1 for _ in range(2000)],
+            DataKeys.PEPTIDE_MZ: [100 for _ in range(2000)],
+            DataKeys.COLLISION_ENERGY: [30 for _ in range(2000)],
+            DataKeys.FRAGMENTATION_TYPE: [FragmentationType.HCD for _ in range(2000)],
         }
     )
 
@@ -90,14 +90,14 @@ def prediction_df_large():
 def prediction_df_ptms():
     return pd.DataFrame(
         {
-            DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTI[DE2", "PEPTI(DE3"],
-            DATA_KEYS.PRECURSOR_CHARGE: [1, 2, 3],
-            DATA_KEYS.PEPTIDE_MZ: [100, 200, 300],
-            DATA_KEYS.COLLISION_ENERGY: [30, 30, 30],
-            DATA_KEYS.FRAGMENTATION_TYPE: [
-                FRAGMENTATION_TYPE.HCD,
-                FRAGMENTATION_TYPE.HCD,
-                FRAGMENTATION_TYPE.HCD,
+            DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTI[DE2", "PEPTI(DE3"],
+            DataKeys.PRECURSOR_CHARGE: [1, 2, 3],
+            DataKeys.PEPTIDE_MZ: [100, 200, 300],
+            DataKeys.COLLISION_ENERGY: [30, 30, 30],
+            DataKeys.FRAGMENTATION_TYPE: [
+                FragmentationType.HCD,
+                FragmentationType.HCD,
+                FragmentationType.HCD,
             ],
         }
     )
@@ -107,14 +107,14 @@ def prediction_df_ptms():
 def prediction_df_high_charge():
     return pd.DataFrame(
         {
-            DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2", "PEPTIDE3"],
-            DATA_KEYS.PRECURSOR_CHARGE: [1, 5, 6],
-            DATA_KEYS.PEPTIDE_MZ: [100, 200, 300],
-            DATA_KEYS.COLLISION_ENERGY: [30, 30, 30],
-            DATA_KEYS.FRAGMENTATION_TYPE: [
-                FRAGMENTATION_TYPE.HCD,
-                FRAGMENTATION_TYPE.HCD,
-                FRAGMENTATION_TYPE.HCD,
+            DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2", "PEPTIDE3"],
+            DataKeys.PRECURSOR_CHARGE: [1, 5, 6],
+            DataKeys.PEPTIDE_MZ: [100, 200, 300],
+            DataKeys.COLLISION_ENERGY: [30, 30, 30],
+            DataKeys.FRAGMENTATION_TYPE: [
+                FragmentationType.HCD,
+                FragmentationType.HCD,
+                FragmentationType.HCD,
             ],
         }
     )
@@ -129,7 +129,7 @@ def spectrum_one():
         [100, 200],
         [0.5, 0.7],
         {"Charge": 1, "Parent": 1.0},
-        {DATA_KEYS.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
+        {DataKeys.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
     )
 
 
@@ -142,7 +142,7 @@ def spectrum_two():
         [150, 250],
         [0.6, 0.8],
         {"Charge": 2, "Parent": 2.0},
-        {DATA_KEYS.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
+        {DataKeys.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
     )
 
 
@@ -155,7 +155,7 @@ def spectrum_none_metadata():
         [100, 200],
         [0.5, 0.7],
         {"Charge": None},
-        {DATA_KEYS.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
+        {DataKeys.FRAGMENT_TYPE: ["b1+1", "y1+2"]},
     )
 
 
@@ -229,22 +229,22 @@ def expected_tsv_header():
 @pytest.mark.parametrize(
     "model_name",
     [
-        AVAILABLE_MODELS.PrositIntensityHCD,
-        AVAILABLE_MODELS.PrositIntensityCID,
-        AVAILABLE_MODELS.PrositIntensityTimsTOF,
+        PredictionModels.PROSITINTENSITYHCD,
+        PredictionModels.PROSITINTENSITYCID,
+        PredictionModels.PROSITINTENSITYTIMSTOF,
     ],
 )
 @pytest.mark.parametrize(
     "output_format",
     [
-        AVAILABLE_FORMATS.CSV_TSV,
-        AVAILABLE_FORMATS.MSP,
-        AVAILABLE_FORMATS.MGF,
+        OutputFormats.CSV_TSV,
+        OutputFormats.MSP,
+        OutputFormats.MGF,
     ],
 )
 @pytest.mark.parametrize("csv_separator", [",", ";", "\t"])
 @pytest.mark.parametrize(
-    "fragmentation_type", [FRAGMENTATION_TYPE.HCD, FRAGMENTATION_TYPE.CID]
+    "fragmentation_type", [FragmentationType.HCD, FragmentationType.CID]
 )
 def test_spectrum_prediction(
     spectrum_prediction_run,
@@ -265,7 +265,7 @@ def test_spectrum_prediction(
     }
 
     # Adjust parameters based on model requirements
-    model_info = MODEL_METADATA[model_name]
+    model_info = PredictionModelMetadata[model_name]
     required_keys = model_info["required_keys"]
 
     # Run the step calculation
@@ -282,18 +282,18 @@ def test_spectrum_prediction(
     assert not metadata_df.empty
     for key in required_keys:
         assert key in metadata_df.columns
-    assert DATA_KEYS.PEPTIDE_MZ in metadata_df.columns
+    assert DataKeys.PEPTIDE_MZ in metadata_df.columns
 
     # Check peaks DataFrame
     assert not peaks_df.empty
-    assert DATA_KEYS.MZ in peaks_df.columns
-    assert DATA_KEYS.INTENSITY in peaks_df.columns
-    assert OUTPUT_KEYS.FRAGMENT_TYPE in peaks_df.columns
-    assert OUTPUT_KEYS.FRAGMENT_CHARGE in peaks_df.columns
+    assert DataKeys.MZ in peaks_df.columns
+    assert DataKeys.INTENSITY in peaks_df.columns
+    assert OutputKeys.FRAGMENT_TYPE in peaks_df.columns
+    assert OutputKeys.FRAGMENT_CHARGE in peaks_df.columns
 
     # Check if the output file is generated
     assert "predicted_spectra" in run.current_outputs
-    if output_format == AVAILABLE_FORMATS.CSV_TSV:
+    if output_format == OutputFormats.CSV_TSV:
         file_output = run.current_outputs["predicted_spectra"]
         assert file_output.file_extension in ["csv", "tsv"]
         if csv_separator == "\t":
@@ -305,7 +305,7 @@ def test_spectrum_prediction(
         content = file_output.content
         assert content.startswith(csv_separator.join(CSV_COLUMNS))
         assert len(content.splitlines()) > 1  # At least header and one data row
-    elif output_format == AVAILABLE_FORMATS.MSP:
+    elif output_format == OutputFormats.MSP:
         file_output = run.current_outputs["predicted_spectra"]
         assert file_output.file_extension == "msp"
 
@@ -313,7 +313,7 @@ def test_spectrum_prediction(
         content = file_output.content
         assert "Name:" in content
         assert "Num Peaks:" in content
-    elif output_format == AVAILABLE_FORMATS.MGF:
+    elif output_format == OutputFormats.MGF:
         file_output = run.current_outputs["predicted_spectra"]
         assert file_output.file_extension == "mgf"
 
@@ -334,58 +334,56 @@ def test_spectrum_prediction(
     assert num_input_peptides == num_predicted_spectra
 
     # Check if the fragmentation type is correctly applied (if applicable)
-    if DATA_KEYS.FRAGMENTATION_TYPE in metadata_df.columns:
-        assert all(metadata_df[DATA_KEYS.FRAGMENTATION_TYPE] == fragmentation_type)
+    if DataKeys.FRAGMENTATION_TYPE in metadata_df.columns:
+        assert all(metadata_df[DataKeys.FRAGMENTATION_TYPE] == fragmentation_type)
 
     # Check if the collision energy is correctly applied (if applicable)
-    if DATA_KEYS.COLLISION_ENERGY in metadata_df.columns:
+    if DataKeys.COLLISION_ENERGY in metadata_df.columns:
         assert all(
-            metadata_df[DATA_KEYS.COLLISION_ENERGY]
+            metadata_df[DataKeys.COLLISION_ENERGY]
             == params["normalized_collision_energy"]
         )
 
     # Check if the peaks are valid
-    assert all(peaks_df[DATA_KEYS.MZ] > 0)
+    assert all(peaks_df[DataKeys.MZ] > 0)
     assert all(
-        (peaks_df[DATA_KEYS.INTENSITY] >= 0) & (peaks_df[DATA_KEYS.INTENSITY] <= 1)
+        (peaks_df[DataKeys.INTENSITY] >= 0) & (peaks_df[DataKeys.INTENSITY] <= 1)
     )
 
     # Check if fragment types are valid
     # TODO account for more fragment types
     valid_fragment_types = set(["b", "y"])  # Add more if needed
 
-    assert set(peaks_df[OUTPUT_KEYS.FRAGMENT_TYPE].str[0]).issubset(
-        valid_fragment_types
-    )
+    assert set(peaks_df[OutputKeys.FRAGMENT_TYPE].str[0]).issubset(valid_fragment_types)
 
     # Check if fragment charges are valid
-    assert all(peaks_df[OUTPUT_KEYS.FRAGMENT_CHARGE].astype(int) > 0)
+    assert all(peaks_df[OutputKeys.FRAGMENT_CHARGE].astype(int) > 0)
 
 
 def test_preprocess_renames_columns_correctly(prediction_df_complete):
     model = KoinaModel(
         required_keys=[
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.FRAGMENTATION_TYPE,
-            DATA_KEYS.COLLISION_ENERGY,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.FRAGMENTATION_TYPE,
+            DataKeys.COLLISION_ENERGY,
         ],
         url="",
     )
     model.prediction_df = prediction_df_complete
     model.preprocess()
     assert set(model.prediction_df.columns) == set(
-        model.required_keys + [DATA_KEYS.PEPTIDE_MZ]
+        model.required_keys + [DataKeys.PEPTIDE_MZ]
     )
 
 
 def test_preprocess_removes_not_required_columns(prediction_df_complete):
     model = KoinaModel(
         required_keys=[
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.FRAGMENTATION_TYPE,
-            DATA_KEYS.COLLISION_ENERGY,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.FRAGMENTATION_TYPE,
+            DataKeys.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -398,10 +396,10 @@ def test_preprocess_removes_not_required_columns(prediction_df_complete):
 def test_preprocess_filters_out_high_charge_peptides(prediction_df_high_charge):
     model = KoinaModel(
         required_keys=[
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.FRAGMENTATION_TYPE,
-            DATA_KEYS.COLLISION_ENERGY,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.FRAGMENTATION_TYPE,
+            DataKeys.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -413,10 +411,10 @@ def test_preprocess_filters_out_high_charge_peptides(prediction_df_high_charge):
 def test_preprocess_filters_out_peptides_with_ptms(prediction_df_ptms):
     model = KoinaModel(
         required_keys=[
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.FRAGMENTATION_TYPE,
-            DATA_KEYS.COLLISION_ENERGY,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.FRAGMENTATION_TYPE,
+            DataKeys.COLLISION_ENERGY,
         ],
         url="",
     )
@@ -427,7 +425,7 @@ def test_preprocess_filters_out_peptides_with_ptms(prediction_df_ptms):
 
 def test_dataframe_verification_passes_with_required_keys(prediction_df_complete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
+        required_keys=[DataKeys.PEPTIDE_SEQUENCE, DataKeys.PRECURSOR_CHARGE], url=""
     )
     model.prediction_df = prediction_df_complete
     model.preprocess()
@@ -437,8 +435,8 @@ def test_dataframe_verification_passes_with_required_keys(prediction_df_complete
 def test_dataframe_verification_raises_error_when_key_missing(prediction_df_complete):
     model = KoinaModel(
         required_keys=[
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
             "MissingKey",
         ],
         url="",
@@ -449,7 +447,7 @@ def test_dataframe_verification_raises_error_when_key_missing(prediction_df_comp
 
 def test_slice_dataframe_returns_correct_slices(prediction_df_incomplete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
+        required_keys=[DataKeys.PEPTIDE_SEQUENCE, DataKeys.PRECURSOR_CHARGE], url=""
     )
     model.load_prediction_df(prediction_df_incomplete)
     slices = model.slice_dataframe()
@@ -460,7 +458,7 @@ def test_slice_dataframe_returns_correct_slices_for_large_dataframe(
     prediction_df_large,
 ):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
+        required_keys=[DataKeys.PEPTIDE_SEQUENCE, DataKeys.PRECURSOR_CHARGE], url=""
     )
     model.load_prediction_df(prediction_df_large)
     slices = model.slice_dataframe()
@@ -471,7 +469,7 @@ def test_slice_dataframe_returns_correct_slices_for_large_dataframe(
 
 def test_format_dataframes_returns_correct_output(prediction_df_complete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
+        required_keys=[DataKeys.PEPTIDE_SEQUENCE, DataKeys.PRECURSOR_CHARGE], url=""
     )
     model.load_prediction_df(prediction_df_complete)
     slices = model.slice_dataframe()
@@ -481,7 +479,7 @@ def test_format_dataframes_returns_correct_output(prediction_df_complete):
 
 def test_format_for_request(prediction_df_complete):
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
+        required_keys=[DataKeys.PEPTIDE_SEQUENCE, DataKeys.PRECURSOR_CHARGE], url=""
     )
     formatted_data = model.format_for_request(prediction_df_complete)
     assert formatted_data is not None
@@ -495,13 +493,13 @@ def test_format_for_request(prediction_df_complete):
 
 def test_load_prediction_df():
     model = KoinaModel(
-        required_keys=[DATA_KEYS.PEPTIDE_SEQUENCE, DATA_KEYS.PRECURSOR_CHARGE], url=""
+        required_keys=[DataKeys.PEPTIDE_SEQUENCE, DataKeys.PRECURSOR_CHARGE], url=""
     )
     df = pd.DataFrame(
         {
-            DATA_KEYS.PEPTIDE_MZ: [100, 200],
-            DATA_KEYS.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
-            DATA_KEYS.PRECURSOR_CHARGE: [1, 2],
+            DataKeys.PEPTIDE_MZ: [100, 200],
+            DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
+            DataKeys.PRECURSOR_CHARGE: [1, 2],
         }
     )
     model.load_prediction_df(df)
@@ -546,13 +544,13 @@ def test_extract_fragment_information_handles_mixed_annotations():
 
 def test_create_spectrum_with_valid_data():
     row = pd.Series(
-        {DATA_KEYS.PEPTIDE_SEQUENCE: "PEPTIDE", DATA_KEYS.PRECURSOR_CHARGE: 2}
+        {DataKeys.PEPTIDE_SEQUENCE: "PEPTIDE", DataKeys.PRECURSOR_CHARGE: 2}
     )
     prepared_data = {
-        OUTPUT_KEYS.MZ_VALUES: np.array([[100, 200, 300]]),
-        OUTPUT_KEYS.INTENSITY_VALUES: np.array([[0.1, 0.2, 0.3]]),
-        OUTPUT_KEYS.FRAGMENT_TYPE: np.array([["b", "y", "b"]]),
-        OUTPUT_KEYS.FRAGMENT_CHARGE: np.array([[1, 2, 1]]),
+        OutputKeys.MZ_VALUES: np.array([[100, 200, 300]]),
+        OutputKeys.INTENSITY_VALUES: np.array([[0.1, 0.2, 0.3]]),
+        OutputKeys.FRAGMENT_TYPE: np.array([["b", "y", "b"]]),
+        OutputKeys.FRAGMENT_CHARGE: np.array([[1, 2, 1]]),
     }
     index = 0
 
@@ -562,32 +560,32 @@ def test_create_spectrum_with_valid_data():
     assert spectrum.peptide_sequence == "PEPTIDE"
     assert spectrum.precursor_charge == 2
     assert np.array_equal(
-        spectrum.spectrum[DATA_KEYS.MZ].values,
-        prepared_data[OUTPUT_KEYS.MZ_VALUES][index],
+        spectrum.spectrum[DataKeys.MZ].values,
+        prepared_data[OutputKeys.MZ_VALUES][index],
     )
     assert np.array_equal(
-        spectrum.spectrum[DATA_KEYS.INTENSITY].values,
-        prepared_data[OUTPUT_KEYS.INTENSITY_VALUES][index],
+        spectrum.spectrum[DataKeys.INTENSITY].values,
+        prepared_data[OutputKeys.INTENSITY_VALUES][index],
     )
     assert np.array_equal(
-        spectrum.spectrum[OUTPUT_KEYS.FRAGMENT_TYPE],
-        prepared_data[OUTPUT_KEYS.FRAGMENT_TYPE][index],
+        spectrum.spectrum[OutputKeys.FRAGMENT_TYPE],
+        prepared_data[OutputKeys.FRAGMENT_TYPE][index],
     )
     assert np.array_equal(
-        spectrum.spectrum[OUTPUT_KEYS.FRAGMENT_CHARGE],
-        prepared_data[OUTPUT_KEYS.FRAGMENT_CHARGE][index],
+        spectrum.spectrum[OutputKeys.FRAGMENT_CHARGE],
+        prepared_data[OutputKeys.FRAGMENT_CHARGE][index],
     )
 
 
 def test_create_spectrum_with_missing_data():
     row = pd.Series(
         {
-            DATA_KEYS.PEPTIDE_SEQUENCE: "PEPTIDE",
+            DataKeys.PEPTIDE_SEQUENCE: "PEPTIDE",
         }
     )
     prepared_data = {
-        OUTPUT_KEYS.MZ_VALUES: np.array([100, 200, 300]),
-        OUTPUT_KEYS.INTENSITY_VALUES: np.array([0.1, 0.2, 0.3]),
+        OutputKeys.MZ_VALUES: np.array([100, 200, 300]),
+        OutputKeys.INTENSITY_VALUES: np.array([0.1, 0.2, 0.3]),
     }
     index = 1
 
@@ -598,10 +596,10 @@ def test_create_spectrum_with_missing_data():
 def test_peak_annotation_with_valid_data():
     spectrum_df = pd.DataFrame(
         {
-            DATA_KEYS.MZ: [100, 200, 300],
-            DATA_KEYS.INTENSITY: [0.1, 0.2, 0.3],
-            OUTPUT_KEYS.FRAGMENT_TYPE: ["b", "y", "b"],
-            OUTPUT_KEYS.FRAGMENT_CHARGE: [1, 2, 1],
+            DataKeys.MZ: [100, 200, 300],
+            DataKeys.INTENSITY: [0.1, 0.2, 0.3],
+            OutputKeys.FRAGMENT_TYPE: ["b", "y", "b"],
+            OutputKeys.FRAGMENT_CHARGE: [1, 2, 1],
         }
     )
     result = SpectrumExporter._format_peaks_for_msp(spectrum_df)
@@ -612,8 +610,8 @@ def test_peak_annotation_with_valid_data():
 def test_peak_annotation_with_empty_data():
     spectrum_df = pd.DataFrame(
         {
-            DATA_KEYS.MZ: [],
-            DATA_KEYS.INTENSITY: [],
+            DataKeys.MZ: [],
+            DataKeys.INTENSITY: [],
         }
     )
     result = SpectrumExporter._format_peaks_for_msp(spectrum_df)
@@ -623,10 +621,10 @@ def test_peak_annotation_with_empty_data():
 def test_peak_annotation_with_custom_prefix_suffix():
     spectrum_df = pd.DataFrame(
         {
-            DATA_KEYS.MZ: [100, 200, 300],
-            DATA_KEYS.INTENSITY: [0.1, 0.2, 0.3],
-            OUTPUT_KEYS.FRAGMENT_TYPE: ["b", "y", "b"],
-            OUTPUT_KEYS.FRAGMENT_CHARGE: [1, 2, 1],
+            DataKeys.MZ: [100, 200, 300],
+            DataKeys.INTENSITY: [0.1, 0.2, 0.3],
+            OutputKeys.FRAGMENT_TYPE: ["b", "y", "b"],
+            OutputKeys.FRAGMENT_CHARGE: [1, 2, 1],
         }
     )
     result = SpectrumExporter._format_peaks_for_msp(spectrum_df, prefix="(", suffix=")")

@@ -4,7 +4,7 @@ from ui.runs.forms.fill_helper import enclose_links_in_html
 
 
 def format_citation(model_name):
-    model_info = MODEL_METADATA[model_name]
+    model_info = PredictionModelMetadata[model_name]
     citation_string = (
         f"{model_name}</b>:<br>"
         f'{enclose_links_in_html(model_info.get("citation", ""))}<br>'
@@ -19,13 +19,15 @@ def calculate_peptide_mass(peptide_mz: float, charge: int) -> float:
     return (peptide_mz * charge) - (proton_mass * charge)
 
 
-class FRAGMENTATION_TYPE(StrEnum):
+class FragmentationType(StrEnum):
+    """The different types of mass spectrometry fragmentation that are supported."""
+
     HCD = "HCD"
     CID = "CID"
 
 
-class DATA_KEYS(StrEnum):
-    """Commonly used keys in the dataframes."""
+class DataKeys(StrEnum):
+    """Commonly used column names and keys in the dataframes."""
 
     PEPTIDE_SEQUENCE = "peptide_sequences"
     PRECURSOR_CHARGE = "precursor_charges"
@@ -39,7 +41,9 @@ class DATA_KEYS(StrEnum):
     FRAGMENT_CHARGE = "fragment_charge"
 
 
-class CSV_KEYS(StrEnum):
+class GenericTextKeys(StrEnum):
+    """These are the column names that are used in the generic text format"""
+
     PEPTIDE_SEQUENCE = "StrippedSequence"
     PRECURSOR_CHARGE = "PrecursorCharge"
     PEPTIDE_MZ = "PrecursorMz"
@@ -50,18 +54,26 @@ class CSV_KEYS(StrEnum):
     FRAGMENT_CHARGE = "FragmentCharge"
 
 
+class GenericTextSeparator(StrEnum):
+    """These are the column separators that are used in the generic text format"""
+
+    COMMA = ";"
+    SEMICOLON = ","
+    TAB = "\t"
+
+
 CSV_COLUMNS = [
-    CSV_KEYS.PEPTIDE_SEQUENCE,
-    CSV_KEYS.PEPTIDE_MZ,
-    CSV_KEYS.PRECURSOR_CHARGE,
-    CSV_KEYS.MZ,
-    CSV_KEYS.INTENSITY,
-    CSV_KEYS.FRAGMENT_TYPE,
-    CSV_KEYS.FRAGMENT_NUMBER,
+    GenericTextKeys.PEPTIDE_SEQUENCE,
+    GenericTextKeys.PEPTIDE_MZ,
+    GenericTextKeys.PRECURSOR_CHARGE,
+    GenericTextKeys.MZ,
+    GenericTextKeys.INTENSITY,
+    GenericTextKeys.FRAGMENT_TYPE,
+    GenericTextKeys.FRAGMENT_NUMBER,
 ]
 
 
-class OUTPUT_KEYS(StrEnum):
+class OutputKeys(StrEnum):
     """These are the keys that are that are returned from the API"""
 
     MZ_VALUES = "mz"
@@ -71,72 +83,78 @@ class OUTPUT_KEYS(StrEnum):
     FRAGMENT_CHARGE = "fragment_charge"
 
 
-class AVAILABLE_MODELS(StrEnum):
-    PrositIntensityHCD = "PrositIntensityHCD"
-    PrositIntensityCID = "PrositIntensityCID"
-    PrositIntensityTimsTOF = "PrositIntensityTimsTOF"
-    PrositIntensityTMT = "PrositIntensityTMT"
+class PredictionModels(StrEnum):
+    """The different spectrum prediction models that are supported."""
+
+    PROSITINTENSITYHCD = "PrositIntensityHCD"
+    PROSITINTENSITYCID = "PrositIntensityCID"
+    PROSITINTENSITYTIMSTOF = "PrositIntensityTimsTOF"
+    PROSITINTENSITYTMT = "PrositIntensityTMT"
 
 
-MODEL_METADATA = {
-    AVAILABLE_MODELS.PrositIntensityHCD: {
+PredictionModelMetadata = {
+    PredictionModels.PROSITINTENSITYHCD: {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2020_intensity_HCD/infer",
         "citation": "Wilhelm, M., Zolg, D.P., Graber, M. et al.  Nat Commun 12, 3346 (2021).",
         "doi": "https://doi.org/10.1038/s41467-021-23713-9",
         "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.COLLISION_ENERGY,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.COLLISION_ENERGY,
         ],
     },
-    AVAILABLE_MODELS.PrositIntensityCID: {
+    PredictionModels.PROSITINTENSITYCID: {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2020_intensity_CID/infer",
         "citation": "Wilhelm, M., Zolg, D.P., Graber, M. et al. Nat Commun 12, 3346 (2021).",
         "doi": "https://doi.org/10.1038/s41467-021-23713-9",
         "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
         ],
     },
-    AVAILABLE_MODELS.PrositIntensityTimsTOF: {
+    PredictionModels.PROSITINTENSITYTIMSTOF: {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2023_intensity_timsTOF/infer",
         "citation": "C., Gabriel, W., Laukens, K. et al. Nat Commun 15, 3956 (2024).",
         "doi": "https://doi.org/10.1038/s41467-024-48322-0",
         "github_url": None,
         "required_keys": [
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.COLLISION_ENERGY,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.COLLISION_ENERGY,
         ],
     },
-    AVAILABLE_MODELS.PrositIntensityTMT: {
+    PredictionModels.PROSITINTENSITYTMT: {
         "url": "https://koina.wilhelmlab.org/v2/models/Prosit_2020_intensity_TMT/infer",
         "citation": " Wassim Gabriel, Matthew The, Daniel P. Zolg, Florian P. Bayer, et al. Analytical Chemistry 2022 94 (20), 7181-7190.",
         "doi": "https://doi.org/10.1021/acs.analchem.1c05435",
         "github_url": "https://github.com/kusterlab/prosit",
         "required_keys": [
-            DATA_KEYS.PEPTIDE_SEQUENCE,
-            DATA_KEYS.PRECURSOR_CHARGE,
-            DATA_KEYS.COLLISION_ENERGY,
-            DATA_KEYS.FRAGMENTATION_TYPE,
+            DataKeys.PEPTIDE_SEQUENCE,
+            DataKeys.PRECURSOR_CHARGE,
+            DataKeys.COLLISION_ENERGY,
+            DataKeys.FRAGMENTATION_TYPE,
         ],
         "preprocess_args": {"filter_ptms": False},
     },
 }
 formatted_citation_dict = {
-    model_name: format_citation(model_name) for model_name in MODEL_METADATA
+    model_name: format_citation(model_name) for model_name in PredictionModelMetadata
 }
 
 
-class AVAILABLE_FORMATS(StrEnum):
+class OutputFormats(StrEnum):
+    """The different output formats for the spectrum predictions that are supported."""
+
     CSV_TSV = "csv/tsv"
     MSP = "msp"
     MGF = "mgf"
 
 
-class OUTPUTS_predict_func(StrEnum):
-    predicted_spectra = "predicted_spectra"
-    predicted_spectra_metadata = "predicted_spectra_metadata"
-    predicted_spectra_peaks = "predicted_spectra_peaks"
+class OutputsPredictFunction(StrEnum):
+    """The dictionary keys of the outputs of the predict function."""
+
+    PREDICTED_SPECTRA = "predicted_spectra"
+    PREDICTED_SPECTRA_METADATA = "predicted_spectra_metadata"
+    PREDICTED_SPECTRA_PEAKS = "predicted_spectra_peaks"
