@@ -6,6 +6,7 @@ from protzilla.methods.data_analysis import (
     DifferentialExpressionLinearModel,
     DifferentialExpressionTTest,
     DimensionReductionUMAP, DataAnalysisStep, SelectPeptidesForProtein, PTMsPerSample,
+    DifferentialExpressionMannWhitneyOnPTM,
 )
 from protzilla.run import Run
 from protzilla.steps import Step
@@ -453,7 +454,7 @@ class PlotVolcanoForm(MethodForm):
     fc_threshold = CustomNumberField(
         label="Log2 fold change threshold", min_value=0, initial=0
     )
-    proteins_of_interest = CustomMultipleChoiceField(
+    items_of_interest = CustomMultipleChoiceField(
         choices=[],
         label="Proteins of interest (will be highlighted)",
     )
@@ -461,20 +462,36 @@ class PlotVolcanoForm(MethodForm):
     def fill_form(self, run: Run) -> None:
         self.fields["input_dict"].choices = fill_helper.to_choices(
             run.steps.get_instance_identifiers(
-                DifferentialExpressionTTest | DifferentialExpressionLinearModel | DifferentialExpressionMannWhitneyOnIntensityForm,
+                DifferentialExpressionTTest
+                | DifferentialExpressionLinearModel
+                | DifferentialExpressionMannWhitneyOnIntensityForm,
                 "differentially_expressed_proteins_df",
             )
         )
+        self.fields["input_dict"].choices.extend(fill_helper.to_choices(
+            run.steps.get_instance_identifiers(
+                DifferentialExpressionMannWhitneyOnPTM,
+                "differentially_expressed_ptm_df",
+            )
+        ))
 
         input_dict_instance_id = self.data.get(
             "input_dict", self.fields["input_dict"].choices[0][0]
         )
 
-        proteins = run.steps.get_step_output(
+        items_of_interest = []
+        step_output = run.steps.get_step_output(
             Step, "differentially_expressed_proteins_df", input_dict_instance_id
-        )["Protein ID"].unique()
+        )
+        if step_output is not None:
+            items_of_interest = step_output["Protein ID"].unique()
+        step_output = run.steps.get_step_output(
+            Step, "differentially_expressed_ptm_df", input_dict_instance_id
+        )
+        if step_output is not None:
+            items_of_interest = step_output["PTM"].unique()
 
-        self.fields["proteins_of_interest"].choices = fill_helper.to_choices(proteins)
+        self.fields["items_of_interest"].choices = fill_helper.to_choices(items_of_interest)
 
 
 class PlotScatterPlotForm(MethodForm):

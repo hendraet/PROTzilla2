@@ -294,7 +294,8 @@ class PlotVolcano(PlotStep):
         "alpha",
         "group1",
         "group2",
-        "proteins_of_interest",
+        "item_type",
+        "items_of_interest",
         "log2_fc",
     ]
     output_keys = []
@@ -316,6 +317,11 @@ class PlotVolcano(PlotStep):
         inputs["log2_fc"] = steps.get_step_output(
             Step, "log2_fold_change_df", inputs["input_dict"]
         )
+
+        if step.operation == "differential_expression":
+            inputs["item_type"] = "Protein ID"
+        elif step.operation == "Peptide analysis":
+            inputs["item_type"] = "PTM"
 
         return inputs
 
