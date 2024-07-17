@@ -24,6 +24,7 @@ def flexiquant_lf(
     grouping_column: str,
     num_init: int = 50,
     mod_cutoff: float = 0.5,
+    included_modifications: list[str] = [],
 ) -> dict:
     """
     FLEXIQuant-LF is a method to quantify protein modification extent in label-free proteomics data.
@@ -38,7 +39,29 @@ def flexiquant_lf(
     :param mod_cutoff: RM score cutoff value for modified peptides.
     """
 
-    df = peptide_df[peptide_df["Protein ID"] == protein_id].pivot_table(
+    df = peptide_df.copy()
+
+    df.drop(columns=["Missed cleavages", "PEP", "Raw file"], inplace=True)
+
+    # remove modified peptides
+    if "Modifications" in df.columns:
+        included = set(included_modifications + ["Unmodified"])
+
+        def has_less_or_equal(sequence):
+            sequence_set = set(sequence.split(","))
+            return len(sequence_set - included) == 0
+
+        df = df[df["Modifications"].apply(has_less_or_equal)]
+
+        # set sequence to modified sequence
+        df["Sequence"] = df["Modified sequence"].str.lstrip("_")
+        df.drop("Modified sequence", axis=1, inplace=True)
+
+        # # append charge to sequence
+        df["Sequence"] = df["Sequence"] + df["Charge"].astype(str)
+        df.drop("Charge", axis=1, inplace=True)
+
+    df = df[df["Protein ID"] == protein_id].pivot_table(
         index="Sample", columns="Sequence", values="Intensity", aggfunc="first"
     )
     df.reset_index(inplace=True)
@@ -76,15 +99,16 @@ def flexiquant_lf(
         # filter dataframe for controls
         df_control = df[df[grouping_column] == reference_group]
 
-    # get modified peptides
-    modified = []
-    for elm in df_control.columns:
-        if "ph" in elm or "ac" in elm or "gly" in elm:
-            modified.append(elm)
+    if "Modifications" not in peptide_df.columns:
+        # get modified peptides
+        modified = []
+        for elm in df_control.columns:
+            if "ph" in elm or "ac" in elm or "gly" in elm:
+                modified.append(elm)
 
-    # delete modified peptides
-    df_control: pd.DataFrame = df_control.drop(modified, axis=1)
-    df.drop(modified, inplace=True, axis=1)
+        # delete modified peptides
+        df_control: pd.DataFrame = df_control.drop(modified, axis=1)
+        df.drop(modified, inplace=True, axis=1)
 
     # delete Group column
     group_column = df[grouping_column]

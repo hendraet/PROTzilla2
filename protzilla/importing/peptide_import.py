@@ -91,6 +91,7 @@ def evidence_import(file_path, intensity_name, map_to_uniprot) -> dict:
         peptide_intensity_name,
         "Modifications",
         "Modified sequence",
+        "Charge",
         "Missed cleavages",
         "PEP",
         "Raw file",
@@ -108,6 +109,10 @@ def evidence_import(file_path, intensity_name, map_to_uniprot) -> dict:
 
     df = df.rename(columns={"Leading razor protein": "Protein ID"})
     df = df.rename(columns={"Experiment": "Sample"})
+
+    columns_without_intensity = [c for c in df.columns if c != peptide_intensity_name]
+
+    df = df.groupby(columns_without_intensity, as_index=False).sum()
 
     df.dropna(subset=["Protein ID"], inplace=True)
     df.sort_values(

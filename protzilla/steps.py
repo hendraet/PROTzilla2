@@ -428,6 +428,7 @@ class StepManager:
         step_type: type[Step] | list[type[Step]],
         input_key: str,
         instance_identifier: str | None = None,
+        form_input: bool = False,
     ):
         """
         Get the specific input of the inputs of a specific step type. The step type can also a parent class of the
@@ -451,6 +452,8 @@ class StepManager:
                 and check_instance_identifier(step)
                 and input_key in step.inputs
             ):
+                if form_input:
+                    return step.form_inputs[input_key]
                 return step.inputs[input_key]
         return None
 

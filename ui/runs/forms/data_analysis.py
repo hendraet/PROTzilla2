@@ -5,6 +5,7 @@ from protzilla.methods.data_analysis import (
     DifferentialExpressionLinearModel,
     DifferentialExpressionTTest,
     DimensionReductionUMAP,
+    FLEXIQuantLF,
     PTMsPerSample,
     SelectPeptidesForProtein,
 )
@@ -1003,6 +1004,9 @@ class FLEXIQuantLFForm(MethodForm):
     mod_cutoff = CustomFloatField(
         label="Modification cutoff", initial=0.5, min_value=0, max_value=1
     )
+    included_modifications = CustomMultipleChoiceField(
+        choices=[], label="Modifications that shouldn't be excluded from analysis"
+    )
 
     def fill_form(self, run: Run) -> None:
         self.fields["peptide_df"].choices = fill_helper.get_choices(run, "peptide_df")
@@ -1025,6 +1029,28 @@ class FLEXIQuantLFForm(MethodForm):
             run.steps.get_step_output(Step, "peptide_df", peptide_df_instance_id)[
                 "Protein ID"
             ].unique()
+        )
+
+        modifications: list = (
+            run.steps.get_step_output(Step, "peptide_df", peptide_df_instance_id)[
+                "Modifications"
+            ]
+            .unique()
+            .tolist()
+        )
+
+        modifications.remove("Unmodified")
+        modifications = [part for string in modifications for part in string.split(",")]
+        modifications = [
+            "".join([char for char in input_string if not char.isdigit()])
+            for input_string in modifications
+        ]
+        modifications = [s.strip() for s in modifications]
+        modifications = list(set(modifications))
+        modifications.sort()
+
+        self.fields["included_modifications"].choices = fill_helper.to_choices(
+            modifications
         )
 
 
@@ -1073,6 +1099,17 @@ class MultiFLEXLFForm(MethodForm):
         self.fields["peptide_df"].choices = fill_helper.get_choices(run, "peptide_df")
         self.fields["reference_group"].choices = fill_helper.to_choices(
             run.steps.metadata_df["Group"].unique()
+        )
+
+
+class FLEXIQuantLFValidatorForm(MethodForm):
+    diff_modified = CustomChoiceField(
+        label="FLEXIQuant-LF step that should be checked", choices=[]
+    )
+
+    def fill_form(self, run: Run) -> None:
+        self.fields["diff_modified"].choices = fill_helper.get_choices(
+            run, "diff_modified", FLEXIQuantLF
         )
 
 

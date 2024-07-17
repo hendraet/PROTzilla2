@@ -29,6 +29,9 @@ from protzilla.data_analysis.ptm_analysis import (
 )
 from protzilla.data_analysis.ptm_quantification.flexiquant import flexiquant_lf
 from protzilla.data_analysis.ptm_quantification.multiflex import multiflex_lf
+from protzilla.data_analysis.ptm_quantification.ptm_checker import (
+    check_ptm_quantification,
+)
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
 
@@ -710,6 +713,7 @@ class FLEXIQuantLF(PlotStep):
         "protein_id",
         "num_init",
         "mod_cutoff",
+        "included_modifications",
     ]
     output_keys = [
         "raw_scores",
@@ -764,6 +768,47 @@ class MultiFLEXLF(PlotStep):
 
         inputs["metadata_df"] = steps.metadata_df
         inputs["colormap"] = int(inputs["colormap"])
+        return inputs
+
+
+class FLEXIQuantLFValidator(DataAnalysisStep):
+    display_name = "FLEXIQuant-LF Validator"
+    operation = "modification_quantification"
+    method_description = "Calculates how good FLEXIQuant-LF was able to identify PTMs in the data. This works only if modifications are known in data."
+
+    input_keys = [
+        "peptide_df",
+        "diff_modified",
+        "protein_id",
+        "included_modifications",
+    ]
+
+    output_keys = [
+        "ptm_coverage",
+        "accuracy",
+        "sensitivity",
+        "specificity",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return check_ptm_quantification(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["peptide_df"] = steps.get_step_input(
+            FLEXIQuantLF, "peptide_df", inputs["diff_modified"], True
+        )
+        inputs["peptide_df"] = steps.get_step_output(
+            Step, "peptide_df", inputs["peptide_df"]
+        )
+        inputs["protein_id"] = steps.get_step_input(
+            FLEXIQuantLF, "protein_id", inputs["diff_modified"]
+        )
+        inputs["included_modifications"] = steps.get_step_input(
+            FLEXIQuantLF, "included_modifications", inputs["diff_modified"]
+        )
+        inputs["diff_modified"] = steps.get_step_output(
+            FLEXIQuantLF, "diff_modified", inputs["diff_modified"]
+        )
         return inputs
 
 
