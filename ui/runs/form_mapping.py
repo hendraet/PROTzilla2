@@ -63,6 +63,7 @@ _forward_mapping = {
     data_analysis.ProteinGraphPeptidesToIsoform: data_analysis_forms.ProteinGraphPeptidesToIsoformForm,
     data_analysis.ProteinGraphVariationGraph: data_analysis_forms.ProteinGraphVariationGraphForm,
     data_analysis.SelectPeptidesForProtein: data_analysis_forms.SelectPeptidesForProteinForm,
+    data_analysis.FLEXIQuantLF: data_analysis_forms.FLEXIQuantLFForm,
     data_analysis.PTMsPerSample: data_analysis_forms.PTMsPerSampleForm,
     data_analysis.PTMsProteinAndPerSample: data_analysis_forms.PTMsPerProteinAndSampleForm,
     data_analysis.TimeSeriesLinearRegression: data_analysis_forms.PlotTimeSeriesLinearRegressionForm,
