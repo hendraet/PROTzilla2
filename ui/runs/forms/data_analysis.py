@@ -1162,3 +1162,21 @@ class PTMsPerProteinAndSampleForm(MethodForm):
         )
         if single_protein_peptides:
             self.fields["peptide_df"].initial = single_protein_peptides[0]
+
+
+class PlotTimeSeriesLinearRegressionForm(MethodForm):
+    input_df = CustomChoiceField(
+        choices=[],
+        label="Peptide dataframe containing the peptides of a single protein",
+    )
+    test_size = CustomFloatField(
+        label="Test size",
+        min_value=0,
+        max_value=1,
+        initial=0.2
+    )
+
+    def fill_form(self, run: Run) -> None:
+        self.fields["input_df"].choices = fill_helper.get_choices_for_peptide_df_steps(
+            run
+        )
