@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from protzilla.data_analysis.time_series_plot_peptide import time_series_plot_peptide
+from protzilla.data_analysis.time_series_regression_analysis import time_series_linear_regression
 
 
 @pytest.fixture
@@ -54,17 +54,26 @@ def time_series_test_data():
     )
     return test_intensity_df, test_metadata_df
 
-def test_time_series_plot(show_figures, time_series_test_data):
+def test_linear_regression_plot(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_plot_peptide(test_intensity, test_metadata, "Protein1")
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2)
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
         fig.show()
     return
 
-def test_time_series_plot_invalid_similarity(time_series_test_data):
+def test_linear_regression_plot_invalid_test_size(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
-        time_series_plot_peptide(test_intensity, test_metadata, "Protein1", similarity=-1, similarity_measure="euclidean distance")
+        time_series_linear_regression(test_intensity, test_metadata, "Protein1", 2)
+    return
+
+def test_linear_regression_outputs(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2)
+    assert "train_root_mean_squared" in outputs
+    assert "test_root_mean_squared" in outputs
+    assert "train_r2_score" in outputs
+    assert "test_r2_score" in outputs
     return
