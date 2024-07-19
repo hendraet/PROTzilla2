@@ -3,19 +3,34 @@ import logging
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 
-from  protzilla.data_analysis.time_series_helper import convert_time_to_datetime
+from protzilla.data_analysis.time_series_helper import convert_time_to_datetime
+from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 
+colors = {
+    "plot_bgcolor": "white",
+    "gridcolor": "#F1F1F1",
+    "linecolor": "#F1F1F1",
+    "annotation_text_color": "#ffffff",
+    "annotation_proteins_of_interest": "#4A536A",
+}
+
+
 def time_series_linear_regression(
         input_df: pd.DataFrame,
         metadata_df: pd.DataFrame,
+        protein_group: str,
         test_size: float,
 ):
+
+    if test_size < 0 or test_size > 1 :
+        raise ValueError("Test size should be between 0 and 1")
+
+    input_df = input_df[input_df['Protein ID'] == protein_group]
 
     input_df = pd.merge(
         left=input_df,
@@ -36,19 +51,10 @@ def time_series_linear_regression(
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
 
-
-    """
-        train_rmse = np.sqrt(mean_squared_error(y_train, y_pred_train))
-        test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
-        train_r2 = r2_score(y_train, y_pred_train)
-        test_r2 = r2_score(y_test, y_pred_test)
-        return dict(
-            train_rmse=train_rmse,
-            test_rmse=test_rmse,
-            train_r2=train_r2,
-            test_r2=test_r2,
-        )
-    """
+    train_rmse = np.sqrt(mean_squared_error(y_train, y_pred_train))
+    test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    train_r2 = r2_score(y_train, y_pred_train)
+    test_r2 = r2_score(y_test, y_pred_test)
 
     train_df = pd.DataFrame({'Time': X_train['Time'], 'Intensity': y_train, 'Predicted': y_pred_train, 'Type': 'Train'})
     test_df = pd.DataFrame({'Time': X_test['Time'], 'Intensity': y_test, 'Predicted': y_pred_test, 'Type': 'Test'})
@@ -61,7 +67,7 @@ def time_series_linear_regression(
         y=plot_df['Intensity'],
         mode='markers',
         name='Actual Intensity',
-        marker=dict(color='blue')
+        marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[0])
     ))
 
     fig.add_trace(go.Scatter(
@@ -69,23 +75,27 @@ def time_series_linear_regression(
         y=plot_df['Predicted'],
         mode='lines',
         name='Predicted Intensity',
-        line=dict(color='red')
+        line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2])
     ))
 
     fig.update_layout(
-        title={
-            "text": "<b>Intensity over Time</b>",
-            "font": dict(size=16),
-            "y": 0.98,
-            "x": 0.5,
-            "xanchor": "center",
-            "yanchor": "top",
-        },
-        xaxis_title="Time",
+        title=f"Intensity over Time for {protein_group}",
+        plot_bgcolor=colors["plot_bgcolor"],
+        xaxis_gridcolor=colors["gridcolor"],
+        yaxis_gridcolor=colors["gridcolor"],
+        xaxis_linecolor=colors["linecolor"],
+        yaxis_linecolor=colors["linecolor"],
+        xaxis_title="Time (hours)",
         yaxis_title="Intensity",
-        plot_bgcolor="white",
-        yaxis={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
-        font=dict(size=14, family="Arial")
+        legend_title="Legend",
+        autosize=True,
+        margin=dict(l=100, r=300, t=100, b=100),
     )
 
-    return dict(plot=[fig])
+    return dict(
+        train_root_mean_squared=train_rmse,
+        test_root_mean_squared=test_rmse,
+        train_r2_score=train_r2,
+        test_r2_score=test_r2,
+        plots=[fig],
+    )

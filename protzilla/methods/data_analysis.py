@@ -799,7 +799,7 @@ class SelectPeptidesForProtein(DataAnalysisStep):
 
 
 class TimeSeriesLinearRegression(PlotStep):
-    display_name = "Time Series Linear Regression"
+    display_name = "Linear Regression"
     operation = "Time series analysis"
     method_description = ("A function to fit a linear model using ordinary least squares for each protein. "
                                     "The linear model fits the protein intensities on Y axis and the Time on X. "
@@ -808,9 +808,15 @@ class TimeSeriesLinearRegression(PlotStep):
     input_keys = [
         "input_df",
         "metadata_df",
+        "protein_group",
         "test_size",
     ]
-    output_keys = []
+    output_keys = [
+        "train_root_mean_squared",
+        "test_root_mean_squared",
+        "train_r2_score",
+        "test_r2_score",
+    ]
 
     def method(self, inputs: dict) -> dict:
         return time_series_linear_regression(**inputs)
