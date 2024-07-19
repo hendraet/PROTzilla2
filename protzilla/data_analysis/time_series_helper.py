@@ -1,4 +1,3 @@
-import pandas as pd
 from datetime import datetime
 
 def convert_time_to_datetime(time_str):
