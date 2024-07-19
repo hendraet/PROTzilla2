@@ -63,8 +63,14 @@ def test_time_series_plot(show_figures, time_series_test_data):
         fig.show()
     return
 
-def test_time_series_plot_invalid_similarity(time_series_test_data):
+def test_time_series_plot_invalid_euclidean_similarity(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
         time_series_plot_peptide(test_intensity, test_metadata, "Protein1", similarity=-1, similarity_measure="euclidean distance")
+    return
+
+def test_time_series_plot_invalid_cosine_similarity(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    with pytest.raises(ValueError):
+        time_series_plot_peptide(test_intensity, test_metadata, "Protein1", similarity=2, similarity_measure="cosine similarity")
     return
