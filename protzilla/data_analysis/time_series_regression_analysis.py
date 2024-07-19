@@ -26,6 +26,15 @@ def time_series_linear_regression(
         protein_group: str,
         test_size: float,
 ):
+    """
+    Perform linear regression on the time series data for a given protein group.
+    :param input_df: Peptide dataframe which contains the intensity of each sample
+    :param metadata_df: Metadata dataframe which contains the timestamps
+    :param protein_group: Protein group to perform the analysis on
+    :param test_size: The proportion of the dataset to include in the test split
+
+    :return: A dictionary containing the root mean squared error and r2 score for the training and test sets
+    """
 
     if test_size < 0 or test_size > 1 :
         raise ValueError("Test size should be between 0 and 1")
