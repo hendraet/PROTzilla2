@@ -14,7 +14,7 @@ from protzilla.data_analysis.differential_expression_mann_whitney import (
 )
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
-from protzilla.data_analysis.time_series_regression_analysis import time_series_linear_regression
+from protzilla.data_analysis.time_series_regression_analysis import time_series_linear_regression, time_series_ransac_regression
 from protzilla.data_analysis.ptm_analysis import filter_peptides_of_protein, ptms_per_sample, \
     ptms_per_protein_and_sample
 from protzilla.data_analysis.model_evaluation import evaluate_classification_model
@@ -820,6 +820,33 @@ class TimeSeriesLinearRegression(PlotStep):
 
     def method(self, inputs: dict) -> dict:
         return time_series_linear_regression(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["input_df"] = steps.get_step_output(Step, "peptide_df", inputs["input_df"])
+        inputs["metadata_df"] = steps.metadata_df
+        return inputs
+
+
+class TimeSeriesRANSACRegression(PlotStep):
+    display_name = "RANSAC Regression"
+    operation = "Time series analysis"
+    method_description = " Perform RANSAC regression on the time series data for a given protein group."
+
+    input_keys = [
+        "input_df",
+        "metadata_df",
+        "protein_group",
+        "test_size",
+    ]
+    output_keys = [
+        "train_root_mean_squared",
+        "test_root_mean_squared",
+        "train_r2_score",
+        "test_r2_score",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return time_series_ransac_regression(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["input_df"] = steps.get_step_output(Step, "peptide_df", inputs["input_df"])
