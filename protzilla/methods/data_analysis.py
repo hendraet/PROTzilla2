@@ -901,6 +901,3 @@ class PTMsProteinAndPerSample(DataAnalysisStep):
         )
         return inputs
 
-    def handle_outputs(self, outputs: dict):
-        super().handle_outputs(outputs)
-        self.display_output["required_sample_size"] = f"Required Sample Size: {outputs['required_sample_size']}"

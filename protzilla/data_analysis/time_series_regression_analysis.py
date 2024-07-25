@@ -255,7 +255,7 @@ def time_series_ransac_regression(
             yanchor="top",
             y=0.95,
             xanchor="right",
-            x=0.85
+            x=0.825
         )
     )
 
@@ -273,3 +273,4 @@ def time_series_ransac_regression(
         test_r2_score=test_r2,
         plots=[fig],
     )
+
