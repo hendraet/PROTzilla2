@@ -77,3 +77,28 @@ def test_linear_regression_outputs(time_series_test_data):
     assert "train_r2_score" in outputs
     assert "test_r2_score" in outputs
     return
+
+
+def test_ransac_regression_plot(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2)
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_linear_ransac_plot_invalid_test_size(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    with pytest.raises(ValueError):
+        time_series_linear_regression(test_intensity, test_metadata, "Protein1", 2)
+    return
+
+def test_ransac_regression_outputs(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2)
+    assert "train_root_mean_squared" in outputs
+    assert "test_root_mean_squared" in outputs
+    assert "train_r2_score" in outputs
+    assert "test_r2_score" in outputs
+    return
