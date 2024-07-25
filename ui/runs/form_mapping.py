@@ -63,6 +63,8 @@ _forward_mapping = {
     data_analysis.ProteinGraphVariationGraph: data_analysis_forms.ProteinGraphVariationGraphForm,
     data_analysis.PredictSpectra: data_analysis_forms.PredictSpectraForm,
     data_analysis.PlotPredictedSpectra: data_analysis_forms.PlotPredictedSpectraForm,
+    data_analysis.PlotMirrorSpectrum: data_analysis_forms.PlotMirrorSpectrumForm,
+    data_analysis.CompareExperimentalWithPredictedSpectra: data_analysis_forms.CompareExperimentalWithPredictedSpectraForm,
     data_analysis.SelectPeptidesForProtein: data_analysis_forms.SelectPeptidesForProteinForm,
     data_analysis.PTMsPerSample: data_analysis_forms.PTMsPerSampleForm,
     data_analysis.PTMsProteinAndPerSample: data_analysis_forms.PTMsPerProteinAndSampleForm,

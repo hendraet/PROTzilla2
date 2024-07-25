@@ -21,7 +21,12 @@ from protzilla.data_analysis.plots import (
     prot_quant_plot,
     scatter_plot,
 )
-from protzilla.data_analysis.predict_spectra import plot_spectrum, predict
+from protzilla.data_analysis.predict_spectra import (
+    compare_experimental_with_predicted_spectra,
+    plot_mirror_spectrum,
+    plot_spectrum,
+    predict,
+)
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
 from protzilla.data_analysis.ptm_analysis import (
     filter_peptides_of_protein,
@@ -750,7 +755,7 @@ class PredictSpectra(DataAnalysisStep):
         "output_format",
         "normalized_collision_energy",
         "fragmentation_type",
-        "csv_seperator",
+        "column_seperator",
         "output_dir",
     ]
     output_keys = [
@@ -798,6 +803,102 @@ class PlotPredictedSpectra(PlotStep):
         )
         inputs["charge"] = int(inputs["charge"])
         return inputs
+
+
+class PlotMirrorSpectrum(PlotStep):
+    display_name = "Predicted Spetrum Mirror Plot"
+    operation = "plot"
+    method_description = "Plot the predicted spectrum of a peptide"
+
+    input_keys = [
+        "metadata_df",
+        "peaks_df",
+        "plot_df",
+        "peptide",
+        "charge",
+        "annotation_threshold",
+    ]
+    output_keys = []
+
+    def method(self, inputs: dict) -> dict:
+        return plot_mirror_spectrum(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils as spu
+
+        inputs["metadata_df"] = steps.get_step_output(
+            Step,
+            "predicted_spectra_metadata",
+            instance_identifier=inputs["prediction_df_step_instance"],
+        )
+        inputs["peaks_df"] = steps.get_step_output(
+            Step,
+            "predicted_spectra_peaks",
+            instance_identifier=inputs["prediction_df_step_instance"],
+        )
+        inputs["charge"] = int(inputs["charge"])
+
+        extracted_spectrum_df = steps.get_step_output(Step, "peptide_df").reset_index(
+            drop=True
+        )
+        spectrum = extracted_spectrum_df[
+            (extracted_spectrum_df[spu.DataKeys.PEPTIDE_SEQUENCE] == inputs["peptide"])
+            & (
+                extracted_spectrum_df[spu.DataKeys.PRECURSOR_CHARGE]
+                == int(inputs["charge"])
+            )
+            & (extracted_spectrum_df["experiment"] == inputs["experiment_name"])
+            & (
+                extracted_spectrum_df["spectra_ref"]
+                == inputs["experiment_spectrum_name"]
+            )
+        ]
+
+        # normalize the intensity
+        spectrum[spu.DataKeys.INTENSITY] = (
+            spectrum[spu.DataKeys.INTENSITY] / spectrum[spu.DataKeys.INTENSITY].max()
+        )
+
+        inputs["plot_df"] = spectrum
+
+        return inputs
+
+
+class CompareExperimentalWithPredictedSpectra(PlotStep):
+    display_name = "Compare Experimental With Predicted Spectra"
+    operation = "plot"
+    method_description = "Plot the predicted spectrum of a peptide"
+
+    input_keys = [
+        "experimental_df",
+        "predicted_df",
+    ]
+    output_keys = ["comparison_result_df"]
+
+    def method(self, inputs: dict) -> dict:
+        return compare_experimental_with_predicted_spectra(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils as spu
+
+        metadata_df = steps.get_step_output(
+            Step,
+            "predicted_spectra_metadata",
+        )
+        peaks_df = steps.get_step_output(
+            Step,
+            "predicted_spectra_peaks",
+        )
+        inputs["predicted_df"] = metadata_df.merge(peaks_df, on="unique_id")
+        extracted_spectrum_df = steps.get_step_output(Step, "peptide_df").reset_index(
+            drop=True
+        )
+        # normalize the intensity
+        extracted_spectrum_df[spu.DataKeys.INTENSITY] = (
+            extracted_spectrum_df[spu.DataKeys.INTENSITY]
+            / extracted_spectrum_df[spu.DataKeys.INTENSITY].max()
+        )
+        inputs["experimental_df"] = extracted_spectrum_df
 
 
 class PTMsPerSample(DataAnalysisStep):

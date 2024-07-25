@@ -168,6 +168,8 @@ class KoinaModel(SpectrumPredictor):
         if self.preprocess_args.get("filter_ptms", True):
             self.filter_ptms()
 
+        # self.prediction_df[DataKeys.PEPTIDE_SEQUENCE] = self.prediction_df[DataKeys.PEPTIDE_SEQUENCE].str.replace("J", "L")
+
     def filter_ptms(self):
         self.prediction_df = self.prediction_df[
             ~self.prediction_df[DataKeys.PEPTIDE_SEQUENCE].str.contains(
