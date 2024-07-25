@@ -70,7 +70,6 @@ def time_series_linear_regression(
 
     fig = make_subplots(rows=1, cols=2, column_widths=[0.75, 0.25], vertical_spacing=0.025)
 
-    # Add main plot traces
     fig.add_trace(go.Scatter(
         x=plot_df['Time'],
         y=plot_df['Intensity'],
@@ -104,7 +103,6 @@ def time_series_linear_regression(
         showlegend=False
     ), row=1, col=2)
 
-    # Update layout
     fig.update_layout(
         title=f"Intensity over Time for {protein_group}",
         plot_bgcolor=colors["plot_bgcolor"],
@@ -121,7 +119,7 @@ def time_series_linear_regression(
             yanchor="top",
             y=0.95,
             xanchor="right",
-            x=0.85
+            x=0.825
         )
     )
 
@@ -129,7 +127,6 @@ def time_series_linear_regression(
     fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
     fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
 
-    # Adjust subplot titles
     fig.update_annotations(font_size=12)
 
     return dict(
@@ -238,7 +235,6 @@ def time_series_ransac_regression(
         showlegend=False
     ), row=1, col=2)
 
-    # Update layout
     fig.update_layout(
         title=f"Intensity over Time for {protein_group}",
         plot_bgcolor=colors["plot_bgcolor"],
@@ -263,7 +259,6 @@ def time_series_ransac_regression(
     fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
     fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
 
-    # Adjust subplot titles
     fig.update_annotations(font_size=12)
 
     return dict(
