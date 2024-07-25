@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -8,6 +10,8 @@ from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE
 from sklearn.linear_model import LinearRegression, RANSACRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
 from plotly.subplots import make_subplots
 
 colors = {
@@ -267,5 +271,104 @@ def time_series_ransac_regression(
         train_r2_score=train_r2,
         test_r2_score=test_r2,
         plots=[fig],
+    )
+
+
+def adfuller_test(
+    input_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
+    protein_group: str,
+    alpha: float = 0.05,
+) -> dict:
+    """
+    Perform the Augmented Dickey-Fuller test to check for stationarity in a time series.
+    :param input_df: The dataframe containing the time series data.
+    :param metadata_df: The dataframe containing the metadata.
+    :param protein_group: The protein group to perform the test on.
+    :param alpha: The significance level for the test (default is 0.05).
+
+    :return: A dictionary containing:
+        - test_statistic: The test statistic from the ADF test.
+        - p_value: The p-value from the ADF test.
+        - critical_values: The critical values for different significance levels.
+        - is_stationary: A boolean indicating if the series is stationary.
+        - messages: A list of messages for the user.
+    """
+
+    messages = []
+    input_df = input_df[input_df['Protein ID'] == protein_group]
+
+    input_df = pd.merge(
+        left=input_df,
+        right=metadata_df,
+        on="Sample",
+        copy=False,
+    )
+
+    input_df = input_df["Intensity"].dropna()
+
+    # Perform the ADF test
+    result = adfuller(input_df)
+    test_statistic = result[0]
+    p_value = result[1]
+    critical_values = result[4]
+
+    # Determine if the series is stationary
+    is_stationary = p_value < alpha
+
+    # Create a message for the user
+    if is_stationary:
+        messages.append(
+            {
+                "level": logging.INFO,
+                "msg": f"The time series is stationary (p-value: {p_value:.5f}).",
+            }
+        )
+    else:
+        messages.append(
+            {
+                "level": logging.WARNING,
+                "msg": f"The time series is not stationary (p-value: {p_value:.5f}).",
+            }
+        )
+    """
+    fig = go.Figure()
+
+    annotation_text = (
+        f"Test Statistic: {test_statistic:.3f}<br>"
+        f"P-Value: {p_value:.3f}<br>"
+        f"Critical Values:<br>"
+        f"Is Stationary: {is_stationary}"
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=[0],
+            y=[0.25],
+            text=[annotation_text],
+            mode='text',
+            textfont=dict(size=12),
+            showlegend=False
+        )
+    )
+
+    fig.update_layout(
+        title=f"Augmented Dickey-Fuller Test for {protein_group}",
+        autosize=True,
+        margin=dict(l=100, r=100, t=100, b=50),
+    )
+
+    # Hide x-axis of the annotation subplot
+    fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False)
+    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False)
+
+    fig.update_annotations(font_size=12)
+    """
+    return dict(
+        test_statistic=test_statistic,
+        p_value=p_value,
+        critical_values=critical_values,
+        is_stationary=is_stationary,
+        messages=messages,
     )
 

@@ -68,6 +68,7 @@ _forward_mapping = {
     data_analysis.PTMsProteinAndPerSample: data_analysis_forms.PTMsPerProteinAndSampleForm,
     data_analysis.TimeSeriesLinearRegression: data_analysis_forms.TimeSeriesLinearRegressionForm,
     data_analysis.TimeSeriesRANSACRegression: data_analysis_forms.TimeSeriesRANSACRegressionForm,
+    data_analysis.TimeSeriesADFullerTest: data_analysis_forms.TimeSeriesADFullerTestForm,
     data_preprocessing.ImputationByMinPerSample: data_preprocessing_forms.ImputationByMinPerSampleForms,
     data_integration.EnrichmentAnalysisGOAnalysisWithString: data_integration_forms.EnrichmentAnalysisGOAnalysisWithStringForm,
     data_integration.EnrichmentAnalysisGOAnalysisWithEnrichr: data_integration_forms.EnrichmentAnalysisGOAnalysisWithEnrichrForm,

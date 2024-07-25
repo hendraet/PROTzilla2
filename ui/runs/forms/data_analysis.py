@@ -1284,3 +1284,37 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
                 instance_identifier=input_df_instance_id,
             )["Protein ID"].unique()
         )
+
+
+class TimeSeriesADFullerTestForm(MethodForm):
+    is_dynamic = True
+    input_df = CustomChoiceField(
+        choices=[],
+        label="Peptide dataframe",
+    )
+    protein_group = CustomChoiceField(
+        choices=[],
+        label="Protein group: which protein group to perform the ADFuller test on",
+    )
+    alpha = CustomFloatField(
+        label="Significance level",
+        min_value=0,
+        max_value=1,
+        initial=0.05
+    )
+
+    def fill_form(self, run: Run) -> None:
+        self.fields["input_df"].choices = fill_helper.get_choices_for_peptide_df_steps(
+            run
+        )
+        input_df_instance_id = self.data.get(
+            "input_df", self.fields["input_df"].choices[0][0]
+        )
+
+        self.fields["protein_group"].choices = fill_helper.to_choices(
+            run.steps.get_step_output(
+                step_type=Step,
+                output_key="peptide_df",
+                instance_identifier=input_df_instance_id,
+            )["Protein ID"].unique()
+        )
