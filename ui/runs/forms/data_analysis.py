@@ -1215,6 +1215,7 @@ class PTMsPerProteinAndSampleForm(MethodForm):
 
 
 class TimeSeriesLinearRegressionForm(MethodForm):
+    is_dynamic = True
     input_df = CustomChoiceField(
         choices=[],
         label="Peptide dataframe",
@@ -1250,6 +1251,7 @@ class TimeSeriesLinearRegressionForm(MethodForm):
 
 
 class TimeSeriesRANSACRegressionForm(MethodForm):
+    is_dynamic = True
     input_df = CustomChoiceField(
         choices=[],
         label="Peptide dataframe",
