@@ -70,12 +70,22 @@ def create_bar_plot(
     :return: returns a bar chart of the data
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
-    fig = px.bar(
-        x=names_of_sectors,
-        y=values_of_sectors,
-        color=colors[: len(values_of_sectors)],
-        color_discrete_map="identity",
-    )
+    patterns = ['/', '\\', 'x']
+    fig = Figure()
+
+    for i, (value, label) in enumerate(zip(values_of_sectors, names_of_sectors)):
+        marker = {
+            'color': colors[i % len(colors)]
+        }
+        if colors[1] in colorscheme.MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE:
+            marker['pattern'] = {'shape': patterns[i % len(patterns)]}
+
+        fig.add_trace(go.Bar(
+            x=[label],
+            y=[value],
+            marker=marker,
+            name=label
+        ))
 
     fig.update_layout(
         xaxis_title=x_title,
@@ -289,6 +299,11 @@ def create_histograms(
         fig = go.Figure()
         fig.add_trace(trace0)
         fig.add_trace(trace1)
+        """fig.update_traces(selector=dict(name=name_a),
+                          marker_pattern_shape="/")
+        fig.update_traces(selector=dict(name=name_b),
+                            marker_pattern_shape="\\")"""
+        #fig.update_traces(trace1)
         fig.update_layout(barmode="overlay")
         fig.update_traces(opacity=0.75)
         if visual_transformation == "log10":

@@ -37,7 +37,7 @@ DEUTAN_DISCRETE_COLOR_SEQUENCE = [
 TRITAN_DISCRETE_COLOR_SEQUENCE = [
     "#48565d",  # blue
     "#f48e9b",  # pink
-    "#99bbca",  # light blue
+    "#6C9AAF",  # light blue
     "#a1a5b2",  # grey
     "#22c6d5"   # turquoise
 ]

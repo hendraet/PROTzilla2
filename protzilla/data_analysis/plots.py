@@ -364,7 +364,7 @@ def prot_quant_plot(
             y=lower_upper_y,
             fill="toself",
             name="Intensity Range",
-            line=dict(color="silver"),
+            line=dict(color="lightgray"),
         )
     )
 
