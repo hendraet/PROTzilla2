@@ -10,7 +10,7 @@ from protzilla.importing.ms_data_import import (
     max_quant_import,
     ms_fragger_import,
 )
-from protzilla.importing.peptide_import import peptide_import
+from protzilla.importing.peptide_import import peptide_import, evidence_import
 from protzilla.steps import Step, StepManager
 
 
@@ -29,7 +29,7 @@ class MaxQuantImport(ImportingStep):
     operation = "msdataimport"
     method_description = "Import MaxQuant data"
 
-    input_keys = ["file_path", "map_to_uniprot", "intensity_name"]
+    input_keys = ["file_path", "map_to_uniprot", "intensity_name", "aggregation_method"]
     output_keys = ["protein_df"]
 
     def method(self, inputs):
@@ -41,7 +41,7 @@ class DiannImport(ImportingStep):
     operation = "msdataimport"
     method_description = "DIA-NN data import"
 
-    input_keys = ["file_path", "map_to_uniprot"]
+    input_keys = ["file_path", "map_to_uniprot", "aggregation_method"]
     output_keys = ["protein_df"]
 
     def method(self, inputs):
@@ -53,7 +53,7 @@ class MsFraggerImport(ImportingStep):
     operation = "msdataimport"
     method_description = "MS Fragger data import"
 
-    input_keys = ["file_path", "intensity_name", "map_to_uniprot"]
+    input_keys = ["file_path", "intensity_name", "map_to_uniprot", "aggregation_method"]
     output_keys = ["protein_df"]
 
     def method(self, inputs):
@@ -123,8 +123,20 @@ class PeptideImport(ImportingStep):
     operation = "peptide_import"
     method_description = "Import peptide data"
 
-    input_keys = ["file_path", "intensity_name"]
+    input_keys = ["file_path", "intensity_name", "map_to_uniprot"]
     output_keys = ["peptide_df"]
 
     def method(self, inputs):
         return peptide_import(**inputs)
+
+
+class EvidenceImport(ImportingStep):
+    display_name = "Evidence import"
+    operation = "peptide_import"
+    method_description = "Import an evidence file"
+
+    input_keys = ["file_path", "intensity_name", "map_to_uniprot"]
+    output_keys = ["peptide_df"]
+
+    def method(self, inputs):
+        return evidence_import(**inputs)

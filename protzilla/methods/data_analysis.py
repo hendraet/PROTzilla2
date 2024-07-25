@@ -1,3 +1,5 @@
+import logging
+
 from protzilla.data_analysis.classification import random_forest, svm
 from protzilla.data_analysis.clustering import (
     expectation_maximisation,
@@ -6,6 +8,10 @@ from protzilla.data_analysis.clustering import (
 )
 from protzilla.data_analysis.differential_expression_anova import anova
 from protzilla.data_analysis.differential_expression_linear_model import linear_model
+from protzilla.data_analysis.differential_expression_mann_whitney import (
+    mann_whitney_test_on_columns,
+    mann_whitney_test_on_intensity_data,
+)
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
 from protzilla.data_analysis.model_evaluation import evaluate_classification_model
@@ -16,6 +22,12 @@ from protzilla.data_analysis.plots import (
     scatter_plot,
 )
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
+from protzilla.data_analysis.ptm_analysis import (
+    filter_peptides_of_protein,
+    ptms_per_protein_and_sample,
+    ptms_per_sample,
+)
+from protzilla.data_analysis.ptm_quantification import flexiquant_lf
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
 
@@ -32,7 +44,7 @@ class PlotStep(DataAnalysisStep):
 
     def handle_outputs(self, outputs: dict):
         super().handle_outputs(outputs)
-        plots = outputs.pop("plots", [])
+        plots = self.output.output.pop("plots", [])
         self.plots = Plots(plots)
 
 
@@ -95,8 +107,6 @@ class DifferentialExpressionTTest(DataAnalysisStep):
         "t_statistic_df",
         "log2_fold_change_df",
         "corrected_alpha",
-        "group1",
-        "group2",
     ]
 
     def method(self, inputs: dict) -> dict:
@@ -134,8 +144,6 @@ class DifferentialExpressionLinearModel(DataAnalysisStep):
         "log2_fold_change_df",
         "corrected_alpha",
         "filtered_proteins",
-        "group1",
-        "group2",
     ]
 
     def method(self, inputs: dict) -> dict:
@@ -149,6 +157,91 @@ class DifferentialExpressionLinearModel(DataAnalysisStep):
 
     def plot(self, inputs):
         raise NotImplementedError("Plotting is not implemented yet for this step.")
+
+
+class DifferentialExpressionMannWhitneyOnIntensity(DataAnalysisStep):
+    display_name = "Mann-Whitney Test"
+    operation = "differential_expression"
+    method_description = (
+        "A function to conduct a Mann-Whitney U test between groups defined in the clinical data."
+        "The p-values are corrected for multiple testing."
+    )
+
+    input_keys = [
+        "intensity_df",
+        "metadata_df",
+        "grouping",
+        "group1",
+        "group2",
+        "alpha",
+        "multiple_testing_correction_method",
+    ]
+    output_keys = [
+        "differentially_expressed_proteins_df",
+        "significant_proteins_df",
+        "corrected_p_values_df",
+        "log2_fold_change_df",
+        "corrected_alpha",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return mann_whitney_test_on_intensity_data(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        if (
+            steps.get_step_output(Step, "protein_df", inputs["intensity_df"])
+            is not None
+        ):
+            inputs["intensity_df"] = steps.get_step_output(
+                Step, "protein_df", inputs["intensity_df"]
+            )
+        inputs["metadata_df"] = steps.metadata_df
+        inputs["log_base"] = steps.get_step_input(TransformationLog, "log_base")
+        return inputs
+
+
+class DifferentialExpressionMannWhitneyOnPTM(DataAnalysisStep):
+    display_name = "Mann-Whitney Test"
+    operation = "Peptide analysis"
+    method_description = (
+        "A function to conduct a Mann-Whitney U test between groups defined in the clinical data."
+        "The p-values are corrected for multiple testing."
+    )
+
+    input_keys = [
+        "df",
+        "metadata_df",
+        "grouping",
+        "group1",
+        "group2",
+        "alpha",
+        "multiple_testing_correction_method",
+        "columns_name",
+    ]
+    output_keys = [
+        "differentially_expressed_ptm_df",
+        "significant_ptm_df",
+        "corrected_p_values_df",
+        "log2_fold_change_df",
+        "corrected_alpha",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return mann_whitney_test_on_columns(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["df"] = steps.get_step_output(Step, "ptm_df", inputs["ptm_df"])
+        inputs["columns_name"] = "PTM"
+        inputs["metadata_df"] = steps.metadata_df
+        inputs["log_base"] = steps.get_step_input(TransformationLog, "log_base")
+        return inputs
+
+    def handle_outputs(self, outputs: dict) -> None:
+        outputs["differentially_expressed_ptm_df"] = outputs.pop(
+            "differential_expressed_columns_df", None
+        )
+        outputs["significant_ptm_df"] = outputs.pop("significant_columns_df", None)
+        super().handle_outputs(outputs)
 
 
 class PlotVolcano(PlotStep):
@@ -261,6 +354,7 @@ class PlotPrecisionRecallCurve(PlotStep):
         # TODO: Input
         "plot_title",
     ]
+
     # Todo: output_keys
 
     def method(self, inputs: dict) -> dict:
@@ -280,6 +374,7 @@ class PlotROC(PlotStep):
         # TODO: Input
         "plot_title",
     ]
+
     # Todo: output_keys
 
     def method(self, inputs: dict) -> dict:
@@ -600,4 +695,131 @@ class ProteinGraphVariationGraph(DataAnalysisStep):
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["peptide_df"] = steps.peptide_df
         inputs["isoform_df"] = steps.isoform_df
+        return inputs
+
+
+class FLEXIQuantLF(PlotStep):
+    display_name = "FLEXIQuant-LF"
+    operation = "modification_quantification"
+    method_description = "FLEXIQuant-LF is an unbiased, label-free computational tool to indirectly detect modified peptides and to quantify the degree of modification based solely on the unmodified peptide species."
+
+    input_keys = [
+        "peptide_df",
+        "metadata_df",
+        "reference_group",
+        "protein_id",
+        "num_init",
+        "mod_cutoff",
+        "grouping_column",
+    ]
+    output_keys = [
+        "raw_scores",
+        "RM_scores",
+        "diff_modified",
+        "removed_peptides",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return flexiquant_lf(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["peptide_df"] = steps.get_step_output(
+            Step, "peptide_df", inputs["peptide_df"]
+        )
+
+        inputs["metadata_df"] = steps.metadata_df
+
+
+class SelectPeptidesForProtein(DataAnalysisStep):
+    display_name = "Filter Peptides of Protein"
+    operation = "Peptide analysis"
+    method_description = "Filter peptides for the a selected Protein of Interest from a peptide dataframe"
+
+    input_keys = [
+        "peptide_df",
+        "protein_ids",
+    ]
+    output_keys = [
+        "peptide_df",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return filter_peptides_of_protein(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["peptide_df"] = steps.get_step_output(
+            Step, "peptide_df", inputs["peptide_df"]
+        )
+
+        inputs["metadata_df"] = steps.metadata_df
+
+        if inputs["auto_select"]:
+            significant_proteins = steps.get_step_output(
+                DataAnalysisStep, "significant_proteins_df", inputs["protein_list"]
+            )
+            index_of_most_significant_protein = significant_proteins[
+                "corrected_p_value"
+            ].idxmin()
+            most_significant_protein = significant_proteins.loc[
+                index_of_most_significant_protein
+            ]
+            inputs["protein_id"] = [most_significant_protein["Protein ID"]]
+            self.messages.append(
+                {
+                    "level": logging.INFO,
+                    "msg": f"Selected the most significant Protein: {most_significant_protein['Protein ID']}, "
+                    f"from {inputs['protein_list']}",
+                }
+            )
+
+        return inputs
+
+
+class PTMsPerSample(DataAnalysisStep):
+    display_name = "PTMs per Sample"
+    operation = "Peptide analysis"
+    method_description = (
+        "Analyze the post-translational modifications (PTMs) of a single protein of interest. "
+        "This function requires a peptide dataframe with PTM information."
+    )
+
+    input_keys = [
+        "peptide_df",
+    ]
+    output_keys = [
+        "ptm_df",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return ptms_per_sample(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["peptide_df"] = steps.get_step_output(
+            Step, "peptide_df", inputs["peptide_df"]
+        )
+        return inputs
+
+
+class PTMsProteinAndPerSample(DataAnalysisStep):
+    display_name = "PTMs per Sample and Protein"
+    operation = "Peptide analysis"
+    method_description = (
+        "Analyze the post-translational modifications (PTMs) of all Proteins. "
+        "This function requires a peptide dataframe with PTM information."
+    )
+
+    input_keys = [
+        "peptide_df",
+    ]
+    output_keys = [
+        "ptm_df",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return ptms_per_protein_and_sample(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["peptide_df"] = steps.get_step_output(
+            Step, "peptide_df", inputs["peptide_df"]
+        )
         return inputs
