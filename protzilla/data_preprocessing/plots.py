@@ -331,8 +331,8 @@ def create_histograms(
 
 def create_anomaly_score_bar_plot(
         anomaly_df: pd.DataFrame,
-        colour_outlier: str = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1],
-        colour_non_outlier: str = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[0],
+        colour_outlier: str = None,
+        colour_non_outlier: str = None,
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -347,6 +347,13 @@ def create_anomaly_score_bar_plot(
     non-outlier colour
     :return: returns a plotly Figure object
     """
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+
+    if colour_outlier is None:
+        colour_outlier = colors[1]
+
+    if colour_non_outlier is None:
+        colour_non_outlier = colors[0]
 
     fig = px.bar(
         anomaly_df,
@@ -387,8 +394,8 @@ def create_anomaly_score_bar_plot(
 def create_pca_2d_scatter_plot(
         pca_df: pd.DataFrame,
         explained_variance_ratio: list,
-        colour_outlier: str = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1],
-        colour_non_outlier: str = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[0],
+        colour_outlier: str = None,
+        colour_non_outlier: str = None,
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -407,6 +414,14 @@ def create_pca_2d_scatter_plot(
 
     :return: returns a plotly Figure object
     """
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+
+    if colour_outlier is None:
+        colour_outlier = colors[1]
+
+    if colour_non_outlier is None:
+        colour_non_outlier = colors[0]
+
     fig = go.Figure(
         data=go.Scatter(
             x=pca_df["Component 1"],
@@ -437,8 +452,8 @@ def create_pca_2d_scatter_plot(
 def create_pca_3d_scatter_plot(
         pca_df: pd.DataFrame,
         explained_variance_ratio: list,
-        colour_outlier: str = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[1],
-        colour_non_outlier: str = PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE[0],
+        colour_outlier: str = None,
+        colour_non_outlier: str = None,
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -457,6 +472,15 @@ def create_pca_3d_scatter_plot(
 
     :return: returns a plotly Figure object
     """
+
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+
+    if colour_outlier is None:
+        colour_outlier = colors[1]
+
+    if colour_non_outlier is None:
+        colour_non_outlier = colors[0]
+
     fig = go.Figure(
         data=go.Scatter3d(
             x=pca_df["Component 1"],
