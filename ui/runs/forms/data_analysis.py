@@ -21,6 +21,7 @@ from .custom_fields import (
     CustomFloatField,
     CustomMultipleChoiceField,
     CustomNumberField,
+    TextDisplayField
 )
 
 
@@ -1302,6 +1303,16 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
 
 class TimeSeriesADFullerTestForm(MethodForm):
     is_dynamic = True
+    test_info = TextDisplayField(
+        label="Information about the Augmented Dickey-Fuller test",
+        text=(
+            "The Augmented Dickey-Fuller test is a type of statistical test called a unit root test. The test "
+             "determines how strongly a time series is defined by a trend. The null hypothesis of the test is that the "
+             "time series can be represented by a unit root, which implies that the time series is not stationary. "
+             "The alternative hypothesis is that the time series is stationary. If the p-value is less than the "
+             "significance level, the null hypothesis can be rejected and the time series is considered stationary."
+        ),
+    )
     input_df = CustomChoiceField(
         choices=[],
         label="Peptide dataframe",
