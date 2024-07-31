@@ -9,3 +9,6 @@ def customise(colors: str, custom_colors: str) -> dict:
     return {'colors': colors, 'custom_color_value': custom_colors}
 
 
+def enhanced_reading_method(enhanced_reading: bool) -> dict:
+    return {'enhanced_reading': enhanced_reading}
+    # todo:do i need that method?

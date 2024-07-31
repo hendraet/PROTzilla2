@@ -8,27 +8,65 @@ from plotly.subplots import make_subplots
 from protzilla.data_preprocessing.plots_helper import generate_tics
 from protzilla.utilities import default_intensity_column
 import protzilla.constants.colors as colorscheme
-from ..constants.colors import PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+
+
+def style_text(text: str, letter_spacing: float, word_spacing: float) -> str:
+    """
+    Function to style text with letter spacing and word spacing.
+
+    :param text: The text to be styled.
+    :param letter_spacing: The amount of letter spacing.
+    :param word_spacing: The amount of word spacing.
+    :return: HTML formatted string with specified letter and word spacing.
+    """
+    return f'<span style="letter-spacing:{letter_spacing}pt;word-spacing:{word_spacing}pt;">{text}</span>'
+
+
+def enhanced_font_size_spacing(enhanced_reading: bool) -> tuple:
+    """
+    Function to return the font size and spacing for the plotly graphs
+    based on the enhanced reading boolean.
+
+    :param enhanced_reading: Boolean to determine if the font size and
+    spacing should be increased.
+    :return: Tuple of the font size and spacing.
+    """
+    add_font_size = 0
+    add_letter_spacing = 0
+    add_word_spacing = 0
+    if enhanced_reading:
+        add_font_size = 2
+        add_letter_spacing = 2.5
+        add_word_spacing = 8.75
+    return add_font_size, add_letter_spacing, add_word_spacing
 
 
 def create_pie_plot(
         names_of_sectors: "list[str]",
         values_of_sectors: "list[int]",
         heading: str = "",
+        enhanced_reading: bool = False
 ) -> Figure:
     """
     Function to create generic pie graph from data.
     Especially helpful for visualisation of basic parts of
     a whole.
 
-    :param colormap: Optional argument to specify the colour of the pie chart
     :param names_of_sectors: Name of parts (so-called sectors) or categories
     :param values_of_sectors: Corresponding values for sectors
     :param heading: Header for the graph - for example the topic
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a pie chart of the data
     """
+
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+
     if any(i < 0 for i in values_of_sectors):
         raise ValueError
+
+    if enhanced_reading:
+        names_of_sectors = [style_text(name, add_letter_spacing, add_word_spacing) for name in names_of_sectors]
+
     fig = px.pie(
         names=names_of_sectors,
         values=values_of_sectors,
@@ -37,14 +75,20 @@ def create_pie_plot(
 
     fig.update_layout(
         title={
-            "text": f"<b>{heading}</b>",
-            "font": dict(size=16),
+            "text": style_text(f"<b>{heading}</b>", add_letter_spacing, add_word_spacing),
+            "font": dict(size=16 + add_font_size, family="Arial"),
             "y": 0.98,
             "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
         },
-        font=dict(size=14, family="Arial"),
+        font=dict(size=14 + add_font_size, family="Arial"),
+        legend=dict(
+            font=dict(
+                size=14 + add_font_size,
+                family="Arial",
+            )
+        )
     )
     fig.update_traces(hovertemplate="%{label} <br>Amount: %{value}")
     return fig
@@ -56,6 +100,7 @@ def create_bar_plot(
         heading: str = "",
         y_title: str = "",
         x_title: str = "",
+        enhanced_reading: bool = False
 ) -> Figure:
     """
     Function to create generic bar graph from data.
@@ -67,11 +112,14 @@ def create_bar_plot(
     :param heading: Header for the graph - for example the topic
     :param y_title: Optional y-axis title.
     :param x_title: Optional x-axis title.
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a bar chart of the data
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     patterns = ['/', '\\', 'x']
     fig = Figure()
+
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
 
     for i, (value, label) in enumerate(zip(values_of_sectors, names_of_sectors)):
         marker = {
@@ -80,31 +128,38 @@ def create_bar_plot(
         if colors[1] in colorscheme.MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE:
             marker['pattern'] = {'shape': patterns[i % len(patterns)]}
 
+        legend_label = style_text(label, add_letter_spacing, add_word_spacing)
+
         fig.add_trace(go.Bar(
             x=[label],
             y=[value],
             marker=marker,
-            name=label
+            name=legend_label
         ))
 
     fig.update_layout(
-        xaxis_title=x_title,
-        yaxis_title=y_title,
+        xaxis_title=style_text(x_title, add_letter_spacing, add_word_spacing),
+        yaxis_title=style_text(y_title, add_letter_spacing, add_word_spacing),
         plot_bgcolor="white",
         yaxis={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
     )
 
     fig.update_layout(
         title={
-            "text": f"<b>{heading}</b>",
-            "font": dict(size=16),
+            "text": style_text(f"<b>{heading}</b>", add_letter_spacing, add_word_spacing),
+            "font": dict(size=16 + add_font_size, family="Arial"),
             "y": 0.98,
             "x": 0.5,
             "xanchor": "center",
             "yanchor": "top",
         },
-        font=dict(size=14, family="Arial"),
+        font=dict(size=14 + add_font_size, family="Arial"),
     )
+
+    fig.update_xaxes(ticktext=[
+        style_text(label, add_letter_spacing, add_word_spacing) for
+        label in names_of_sectors],
+                     tickvals=names_of_sectors)
     return fig
 
 
@@ -118,6 +173,7 @@ def create_box_plots(
         x_title: str = "",
         group_by: str = "None",
         visual_transformation: str = "linear",
+        enhanced_reading: bool = False
 ) -> Figure:
     """
     A function to create a boxplot for visualisation
@@ -141,6 +197,7 @@ def create_box_plots(
     "Protein ID" to group by protein. Leave "None" to get ungrouped\
     conventional graphs. If set the function will ignore the\
     graph_type argument. Default is "None".
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a boxplot of the data
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
@@ -152,19 +209,22 @@ def create_box_plots(
         )
     intensity_name_a = default_intensity_column(dataframe_a)
     intensity_name_b = default_intensity_column(dataframe_b)
+
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+
     if group_by in {"Sample", "Protein ID"}:
         fig = make_subplots(rows=1, cols=2)
         trace0 = go.Box(
             y=dataframe_a[intensity_name_a],
             x=dataframe_a[group_by],
             marker_color=colors[0],
-            name=name_a,
+            name=style_text(name_a, add_letter_spacing, add_word_spacing),
         )
         trace1 = go.Box(
             y=dataframe_b[intensity_name_b],
             x=dataframe_b[group_by],
             marker_color=colors[1],
-            name=name_b,
+            name=style_text(name_b, add_letter_spacing, add_word_spacing),
         )
         fig.add_trace(trace0, 1, 1)
         fig.add_trace(trace1, 1, 2)
@@ -175,28 +235,28 @@ def create_box_plots(
         trace0 = go.Box(
             y=dataframe_a[intensity_name_a],
             marker_color=colors[0],
-            name=name_a,
+            name=style_text(name_a, add_letter_spacing, add_word_spacing),
         )
         trace1 = go.Box(
             y=dataframe_b[intensity_name_b],
             marker_color=colors[1],
-            name=name_b,
+            name=style_text(name_b, add_letter_spacing, add_word_spacing),
         )
         fig.add_trace(trace0, 1, 1)
         fig.add_trace(trace1, 1, 2)
 
     fig.update_layout(
-        xaxis_title=x_title,
-        yaxis_title=y_title,
-        xaxis2_title=x_title,
-        yaxis2_title=y_title,
-        font=dict(size=14, family="Arial"),
+        xaxis_title=style_text(x_title, add_letter_spacing, add_word_spacing),
+        yaxis_title=style_text(y_title, add_letter_spacing, add_word_spacing),
+        xaxis2_title=style_text(x_title, add_letter_spacing, add_word_spacing),
+        yaxis2_title=style_text(y_title, add_letter_spacing, add_word_spacing),
+        font=dict(size=14 + add_font_size, family="Arial"),
         plot_bgcolor="white",
         yaxis1={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
         yaxis2={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
         title={
-            "text": f"<b>{heading}</b>",
-            "font": dict(size=16),
+            "text": style_text(f"<b>{heading}</b>", add_letter_spacing, add_word_spacing),
+            "font": dict(size=16 + add_font_size),
             "y": 0.98,
             "x": 0.5,
             "xanchor": "center",
@@ -303,7 +363,7 @@ def create_histograms(
                           marker_pattern_shape="/")
         fig.update_traces(selector=dict(name=name_b),
                             marker_pattern_shape="\\")"""
-        #fig.update_traces(trace1)
+        # fig.update_traces(trace1)
         fig.update_layout(barmode="overlay")
         fig.update_traces(opacity=0.75)
         if visual_transformation == "log10":
@@ -333,6 +393,7 @@ def create_anomaly_score_bar_plot(
         anomaly_df: pd.DataFrame,
         colour_outlier: str = None,
         colour_non_outlier: str = None,
+        enhanced_reading: bool = False
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -345,6 +406,7 @@ def create_anomaly_score_bar_plot(
     :param colour_non_outlier: hex code for colour depicting the
     non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     non-outlier colour
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a plotly Figure object
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
@@ -355,6 +417,21 @@ def create_anomaly_score_bar_plot(
     if colour_non_outlier is None:
         colour_non_outlier = colors[0]
 
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+
+    # Mapping for the legend labels
+    outlier_label = "True"
+    non_outlier_label = "False"
+    if enhanced_reading:
+        outlier_label = style_text(outlier_label, add_letter_spacing, add_word_spacing)
+        non_outlier_label = style_text(non_outlier_label, add_letter_spacing, add_word_spacing)
+
+    # Replace boolean values with styled labels
+    anomaly_df["Outlier Label"] = anomaly_df["Outlier"].replace({
+        True: outlier_label,
+        False: non_outlier_label
+    })
+
     fig = px.bar(
         anomaly_df,
         x=anomaly_df.index,
@@ -362,19 +439,20 @@ def create_anomaly_score_bar_plot(
         hover_name=anomaly_df.index,
         hover_data={
             "Anomaly Score": True,
-            "Outlier": True,
+            "Outlier Label": True,
         },
-        color="Outlier",
+        color="Outlier Label",
         color_discrete_map={
-            False: colour_non_outlier,
-            True: colour_outlier,
+            outlier_label: colour_outlier,
+            non_outlier_label: colour_non_outlier,
         },
         labels={
-            "Sample": "Sample ",
-            "Anomaly Score": "Anomaly Score ",
-            "Outlier": "Outlier ",
+            "Sample": style_text("Sample", add_letter_spacing, add_word_spacing),
+            "Anomaly Score": style_text("Anomaly Score", add_letter_spacing, add_word_spacing),
+            "Outlier Label": style_text("Outlier", add_letter_spacing, add_word_spacing),
         },
     )
+
     fig.update_coloraxes(showscale=False)
     fig.update_layout(xaxis={"categoryorder": "category ascending"})
     fig.update_layout(
@@ -384,18 +462,26 @@ def create_anomaly_score_bar_plot(
             "gridcolor": "lightgrey",
         },
         xaxis={"visible": False, "showticklabels": False},
-        font=dict(size=18, family="Arial"),
+        font=dict(size=14 + add_font_size, family="Arial"),
         plot_bgcolor="white",
+        title={
+            "text": style_text("Anomaly Score Bar Plot", add_letter_spacing, add_word_spacing),
+            "font": dict(size=16 + add_font_size, family="Arial"),
+            "y": 0.98,
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top",
+        }
     )
 
     return fig
-
 
 def create_pca_2d_scatter_plot(
         pca_df: pd.DataFrame,
         explained_variance_ratio: list,
         colour_outlier: str = None,
         colour_non_outlier: str = None,
+        enhanced_reading: bool = False
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -411,6 +497,7 @@ def create_pca_2d_scatter_plot(
     :param colour_non_outlier: hex code for colour depicting the
     non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     non-outlier colour
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
 
     :return: returns a plotly Figure object
     """
@@ -422,32 +509,50 @@ def create_pca_2d_scatter_plot(
     if colour_non_outlier is None:
         colour_non_outlier = colors[0]
 
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+
+    outlier_label = "Outlier"
+    non_outlier_label = "Non-Outlier"
+    if enhanced_reading:
+        outlier_label = style_text(outlier_label, add_letter_spacing, add_word_spacing)
+        non_outlier_label = style_text(non_outlier_label, add_letter_spacing, add_word_spacing)
+
+    pca_df["Outlier Label"] = pca_df["Outlier"].replace({
+        True: outlier_label,
+        False: non_outlier_label
+    })
+
     fig = go.Figure(
         data=go.Scatter(
             x=pca_df["Component 1"],
             y=pca_df["Component 2"],
             mode="markers",
-            marker_color=pca_df["Outlier"].map(
-                {True: colour_outlier, False: colour_non_outlier}
-            ),
+            marker=dict(color=pca_df["Outlier Label"].map({
+                outlier_label: colour_outlier,
+                non_outlier_label: colour_non_outlier
+            })),
             text=pca_df.index.values,
+            hovertemplate="%{text} <br>Outlier: %{marker.color}",
         )
     )
+
     e_variance_0 = round(explained_variance_ratio[0], 4) * 100
     e_variance_1 = round(explained_variance_ratio[1], 4) * 100
+
     fig.update_layout(
-        xaxis_title=f"Principal Component 1 ({e_variance_0:.2f} %)",
-        yaxis_title=f"Principal Component 2 ({e_variance_1:.2f} %)",
-        font=dict(size=14, family="Arial"),
+        xaxis_title=style_text(f"Principal Component 1 ({e_variance_0:.2f} %)", add_letter_spacing, add_word_spacing),
+        yaxis_title=style_text(f"Principal Component 2 ({e_variance_1:.2f} %)", add_letter_spacing, add_word_spacing),
+        font=dict(size=14 + add_font_size, family="Arial"),
         plot_bgcolor="white",
         yaxis={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
         xaxis={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
+        legend=dict(
+            title="Legend",
+            itemsizing="constant",
+        ),
     )
-    fig.update_xaxes(showticklabels=False)
-    fig.update_yaxes(showticklabels=False)
 
     return fig
-
 
 def create_pca_3d_scatter_plot(
         pca_df: pd.DataFrame,
@@ -472,7 +577,6 @@ def create_pca_3d_scatter_plot(
 
     :return: returns a plotly Figure object
     """
-
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 
     if colour_outlier is None:

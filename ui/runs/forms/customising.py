@@ -4,6 +4,7 @@ from .base import MethodForm
 from .custom_fields import (
     CustomChoiceField,
     CustomCharField,
+    CustomBooleanField
 )
 from protzilla.run_v2 import Run
 
@@ -38,3 +39,10 @@ class ColorForm(MethodForm):
                 label="Custom Colors",
                 initial="#4A536A, #CE5A5A",
             )
+
+
+class ReadingForm(MethodForm):
+    enhanced_reading = CustomBooleanField(
+        label="Enhanced Reading",
+        initial=False,
+    )

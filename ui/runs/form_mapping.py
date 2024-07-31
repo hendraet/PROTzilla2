@@ -18,6 +18,7 @@ from .forms.base import MethodForm
 
 _forward_mapping = {
     customising.ChangeColor: customising_forms.ColorForm,
+    customising.EnhancedReading: customising_forms.ReadingForm,
     importing.MaxQuantImport: importing_forms.MaxQuantImportForm,
     importing.DiannImport: importing_forms.DiannImportForm,
     importing.MsFraggerImport: importing_forms.MSFraggerImportForm,

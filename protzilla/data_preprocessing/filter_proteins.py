@@ -2,7 +2,7 @@ import pandas as pd
 
 from protzilla.data_preprocessing.plots import create_bar_plot, create_pie_plot
 from ..utilities.transform_dfs import long_to_wide
-from protzilla.customising.colorways import customise
+from protzilla.customising.accessibility import customise
 from protzilla.steps import StepManager
 from protzilla.methods.customising import CustomisingStep  # replace with the actual import
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from protzilla.steps import Step, StepManager
 
-from protzilla.customising.colorways import customise
+from protzilla.customising.accessibility import customise, enhanced_reading_method
 
 
 class CustomisingStep(Step):
@@ -18,7 +18,7 @@ class CustomisingStep(Step):
 class ChangeColor(CustomisingStep):
     display_name = "Color"
     operation = "Color"
-    method_description = "Change the colors of visualizations"
+    method_description = "Change the color scheme of visualizations, helpful for colorblind and low vision users"
     input_keys = ["colors", "custom_colors"]
     output_keys = ["colors"]
 
@@ -29,3 +29,15 @@ class ChangeColor(CustomisingStep):
 
     def method(self, inputs):
         return customise(**inputs)
+
+
+class EnhancedReading(CustomisingStep):
+    display_name = "Enhanced Reading"
+    operation = "Reading"
+    method_description = "Enhance reading experience by changing size and spacing of text"
+    input_keys = ["enhanced_reading"]
+    output_keys = ["enhanced_reading"]
+
+    def method(self, inputs):
+        return enhanced_reading_method(**inputs)
+    # todo:check if i can just return inputs

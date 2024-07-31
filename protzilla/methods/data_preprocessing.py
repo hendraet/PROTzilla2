@@ -30,6 +30,7 @@ class DataPreprocessingStep(Step):
     def insert_dataframes(self, steps: StepManager, inputs: dict) -> dict:
         inputs["protein_df"] = steps.protein_df
         inputs["peptide_df"] = steps.get_step_output(Step, "peptide_df")
+        inputs["enhanced_reading"] = steps.get_step_output(Step, "enhanced_reading")
         return inputs
 
     def plot(self, inputs: dict = None):
