@@ -5,40 +5,10 @@ import plotly.graph_objects as go
 from plotly.graph_objects import Figure
 from plotly.subplots import make_subplots
 
-from protzilla.data_preprocessing.plots_helper import generate_tics
+from protzilla.data_preprocessing.plots_helper import generate_tics, style_text, enhanced_font_size_spacing, add_spacing
 from protzilla.utilities import default_intensity_column
 import protzilla.constants.colors as colorscheme
 
-
-def style_text(text: str, letter_spacing: float, word_spacing: float) -> str:
-    """
-    Function to style text with letter spacing and word spacing.
-
-    :param text: The text to be styled.
-    :param letter_spacing: The amount of letter spacing.
-    :param word_spacing: The amount of word spacing.
-    :return: HTML formatted string with specified letter and word spacing.
-    """
-    return f'<span style="letter-spacing:{letter_spacing}pt;word-spacing:{word_spacing}pt;">{text}</span>'
-
-
-def enhanced_font_size_spacing(enhanced_reading: bool) -> tuple:
-    """
-    Function to return the font size and spacing for the plotly graphs
-    based on the enhanced reading boolean.
-
-    :param enhanced_reading: Boolean to determine if the font size and
-    spacing should be increased.
-    :return: Tuple of the font size and spacing.
-    """
-    add_font_size = 0
-    add_letter_spacing = 0
-    add_word_spacing = 0
-    if enhanced_reading:
-        add_font_size = 2
-        add_letter_spacing = 2.5
-        add_word_spacing = 8.75
-    return add_font_size, add_letter_spacing, add_word_spacing
 
 
 def create_pie_plot(
@@ -270,15 +240,16 @@ def create_box_plots(
 
 
 def create_histograms(
-        dataframe_a: pd.DataFrame,
-        dataframe_b: pd.DataFrame,
-        name_a: str = "",
-        name_b: str = "",
-        heading: str = "",
-        y_title: str = "",
-        x_title: str = "",
-        visual_transformation: str = "linear",
-        overlay: bool = False,
+    dataframe_a: pd.DataFrame,
+    dataframe_b: pd.DataFrame,
+    name_a: str = "",
+    name_b: str = "",
+    heading: str = "",
+    y_title: str = "",
+    x_title: str = "",
+    visual_transformation: str = "linear",
+    overlay: bool = False,
+    enhanced_reading: bool = False
 ) -> Figure:
     """
     A function to create a histogram for visualisation
@@ -290,16 +261,15 @@ def create_histograms(
     first histogram
     :param dataframe_b: Second dataframe in protzilla long format\
     for second histogram
-
     :param name_a: Name of first histogram
     :param name_b: Name of second histogram
     :param heading: Header or title for the graph (optional)
-    :param y_title: Optional y axis title for graphs.
-    :param x_title: Optional x axis title for graphs.
+    :param y_title: Optional y-axis title for graphs.
+    :param x_title: Optional x-axis title for graphs.
     :param overlay: Specifies whether to draw one Histogram with overlay or two separate histograms
     :param visual_transformation: Visual transformation of the y-axis data.
-
-    :return: returns a pie or bar chart of the data
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
+    :return: returns a plotly Figure object
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
 
@@ -323,15 +293,17 @@ def create_histograms(
     max_value = max(intensities_a.max(skipna=True), intensities_b.max(skipna=True))
 
     number_of_bins = 100
-    binsize_a = (
-                        intensities_a.max(skipna=True) - intensities_a.min(skipna=True)
-                ) / number_of_bins
-    binsize_b = (
-                        intensities_b.max(skipna=True) - intensities_b.min(skipna=True)
-                ) / number_of_bins
+    binsize_a = (intensities_a.max(skipna=True) - intensities_a.min(skipna=True)) / number_of_bins
+    binsize_b = (intensities_b.max(skipna=True) - intensities_b.min(skipna=True)) / number_of_bins
 
     if overlay:
         binsize_a = binsize_b = max(binsize_a, binsize_b)
+
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+
+    if enhanced_reading:
+        name_a = style_text(name_a, add_letter_spacing, add_word_spacing)
+        name_b = style_text(name_b, add_letter_spacing, add_word_spacing)
 
     trace0 = go.Histogram(
         x=intensities_a,
@@ -345,11 +317,15 @@ def create_histograms(
         name=name_b,
         xbins=dict(start=min_value, end=max_value, size=binsize_b),
     )
+
     if not overlay:
         fig = make_subplots(rows=1, cols=2)
         fig.add_trace(trace0, 1, 1)
         fig.add_trace(trace1, 1, 2)
-        fig.update_layout(xaxis2_title=x_title, yaxis2_title=y_title)
+        fig.update_layout(
+            xaxis2_title=style_text(x_title, add_letter_spacing, add_word_spacing),
+            yaxis2_title=style_text(y_title, add_letter_spacing, add_word_spacing),
+        )
         if visual_transformation == "log10":
             fig.update_layout(
                 xaxis=generate_tics(0, max_value, True),
@@ -359,26 +335,21 @@ def create_histograms(
         fig = go.Figure()
         fig.add_trace(trace0)
         fig.add_trace(trace1)
-        """fig.update_traces(selector=dict(name=name_a),
-                          marker_pattern_shape="/")
-        fig.update_traces(selector=dict(name=name_b),
-                            marker_pattern_shape="\\")"""
-        # fig.update_traces(trace1)
         fig.update_layout(barmode="overlay")
         fig.update_traces(opacity=0.75)
         if visual_transformation == "log10":
             fig.update_layout(xaxis=generate_tics(0, max_value, True))
 
     fig.update_layout(
-        xaxis_title=x_title,
-        yaxis_title=y_title,
-        font=dict(size=14, family="Arial"),
+        xaxis_title=style_text(x_title, add_letter_spacing, add_word_spacing),
+        yaxis_title=style_text(y_title, add_letter_spacing, add_word_spacing),
+        font=dict(size=14 + add_font_size, family="Arial"),
         plot_bgcolor="white",
-        yaxis1={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
-        yaxis2={"gridcolor": "lightgrey", "zerolinecolor": "lightgrey"},
+        yaxis=dict(gridcolor="lightgrey", zerolinecolor="lightgrey"),
+        yaxis2=dict(gridcolor="lightgrey", zerolinecolor="lightgrey"),
         title={
-            "text": f"<b>{heading}</b>",
-            "font": dict(size=16),
+            "text": style_text(f"<b>{heading}</b>", add_letter_spacing, add_word_spacing),
+            "font": dict(size=16 + add_font_size, family="Arial"),
             "y": 0.98,
             "x": 0.5,
             "xanchor": "center",
@@ -555,15 +526,16 @@ def create_pca_2d_scatter_plot(
     return fig
 
 def create_pca_3d_scatter_plot(
-        pca_df: pd.DataFrame,
-        explained_variance_ratio: list,
-        colour_outlier: str = None,
-        colour_non_outlier: str = None,
+    pca_df: pd.DataFrame,
+    explained_variance_ratio: list,
+    colour_outlier: str = None,
+    colour_non_outlier: str = None,
+    enhanced_reading: bool = False
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
     and non-outlier points by showing the principal components. It
-    returns a ploty Figure object.
+    returns a plotly Figure object.
 
     :param pca_df: a DataFrame that contains the projection of\
     the intensity_df on first principal components
@@ -574,7 +546,7 @@ def create_pca_3d_scatter_plot(
     :param colour_non_outlier: hex code for colour depicting the
     non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     non-outlier colour
-
+    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a plotly Figure object
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
@@ -584,6 +556,8 @@ def create_pca_3d_scatter_plot(
 
     if colour_non_outlier is None:
         colour_non_outlier = colors[0]
+
+    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
 
     fig = go.Figure(
         data=go.Scatter3d(
@@ -601,17 +575,31 @@ def create_pca_3d_scatter_plot(
     y_percent = round(explained_variance_ratio[1], 4) * 100
     z_percent = round(explained_variance_ratio[2], 4) * 100
 
+    # Create axis titles with spacing adjusted by adding spaces manually
+    xaxis_title = f"Principal Component 1 ({x_percent:.2f} %)"
+    yaxis_title = f"Principal Component 2 ({y_percent:.2f} %)"
+    zaxis_title = f"Principal Component 3 ({z_percent:.2f} %)"
+
+    if enhanced_reading:
+        xaxis_title = add_spacing(xaxis_title, add_letter_spacing, add_word_spacing)
+        yaxis_title = add_spacing(yaxis_title, add_letter_spacing, add_word_spacing)
+        zaxis_title = add_spacing(zaxis_title, add_letter_spacing, add_word_spacing)
+
     fig.update_layout(
         scene=dict(
-            xaxis_title=(f"Principal Component 1 ({x_percent:.2f} %)"),
-            yaxis_title=(f"Principal Component 2 ({y_percent:.2f} %)"),
-            zaxis_title=(f"Principal Component 3 ({z_percent:.2f} %)"),
-            xaxis=dict(showticklabels=False),
-            yaxis=dict(showticklabels=False),
-            zaxis=dict(showticklabels=False),
+            xaxis=dict(title=dict(text=xaxis_title, font=dict(size=14 + add_font_size))),
+            yaxis=dict(title=dict(text=yaxis_title, font=dict(size=14 + add_font_size))),
+            zaxis=dict(title=dict(text=zaxis_title, font=dict(size=14 + add_font_size))),
+            xaxis_showticklabels=False,
+            yaxis_showticklabels=False,
+            zaxis_showticklabels=False,
         ),
-        font=dict(size=14, family="Arial"),
+        font=dict(size=14 + add_font_size, family="Arial"),
         plot_bgcolor="white",
     )
 
     return fig
+#todo: this plot doesnt work with bigger spacing because the axes are not filly readable
+
+
+

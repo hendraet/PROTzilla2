@@ -45,3 +45,48 @@ def millify(n) -> str:
     )
 
     return "{:.0f}{}".format(n / 10 ** (3 * millidx), millnames[millidx])
+
+def style_text(text: str, letter_spacing: float, word_spacing: float) -> str:
+    """
+    Function to style text with letter spacing and word spacing.
+
+    :param text: The text to be styled.
+    :param letter_spacing: The amount of letter spacing.
+    :param word_spacing: The amount of word spacing.
+    :return: HTML formatted string with specified letter and word spacing.
+    """
+    return f'<span style="letter-spacing:{letter_spacing}pt;word-spacing:{word_spacing}pt;">{text}</span>'
+
+
+def enhanced_font_size_spacing(enhanced_reading: bool) -> tuple:
+    """
+    Function to return the font size and spacing for the plotly graphs
+    based on the enhanced reading boolean.
+
+    :param enhanced_reading: Boolean to determine if the font size and
+    spacing should be increased.
+    :return: Tuple of the font size and spacing.
+    """
+    add_font_size = 0
+    add_letter_spacing = 0
+    add_word_spacing = 0
+    if enhanced_reading:
+        add_font_size = 2
+        add_letter_spacing = 2.5
+        add_word_spacing = 8.75
+    return add_font_size, add_letter_spacing, add_word_spacing
+
+def add_spacing(text: str, letter_spacing: float, word_spacing: float) -> str:
+    """
+    Adds additional spacing to letters and words for the given text.
+
+    :param text: The text to which spacing should be added.
+    :param letter_spacing: The amount of spacing to add between letters.
+    :param word_spacing: The amount of spacing to add between words.
+    :return: The text with added spacing.
+    """
+    # Adding letter spacing by inserting additional spaces between each character
+    spaced_text = f" {' ' * int(letter_spacing)} ".join(text)
+    # Adding word spacing by replacing single spaces with more spaces
+    #spaced_text = spaced_text.replace(' ', ' ' * int(word_spacing))
+    return spaced_text
