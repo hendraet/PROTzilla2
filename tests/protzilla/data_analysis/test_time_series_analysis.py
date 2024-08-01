@@ -1,7 +1,11 @@
 import pandas as pd
 import pytest
 
-from protzilla.data_analysis.time_series_regression_analysis import time_series_linear_regression, time_series_ransac_regression, adfuller_test
+from protzilla.data_analysis.time_series_regression_analysis import (
+    time_series_linear_regression,
+    time_series_ransac_regression,
+    adfuller_test,
+)
 
 
 @pytest.fixture
@@ -43,20 +47,32 @@ def time_series_test_data():
     )
 
     test_metadata_df = (
-        ["Sample1", "02:00:00", 1],
-        ["Sample2", "06:00:00", 1],
-        ["Sample3", "10:00:00", 1],
-         ["Sample4", "14:00:00", 1],
+        ["Sample1", "02:00:00", "1"],
+        ["Sample2", "06:00:00", "1"],
+        ["Sample3", "10:00:00", "1"],
+         ["Sample4", "14:00:00", "1"],
+        ["Sample5", "2:00:00", "2"],
+        ["Sample6", "4:00:00", "2"],
+        ["Sample7", "6:00:00", "2"],
     )
     test_metadata_df = pd.DataFrame(
         data=test_metadata_df,
-        columns=["Sample", "Time", "Day"],
+        columns=["Sample", "Time", "Group"],
     )
     return test_intensity_df, test_metadata_df
 
-def test_linear_regression_plot(show_figures, time_series_test_data):
+def test_linear_regression_plot_with_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2)
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2,"With Grouping")
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_linear_regression_plot_without_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2,"Without Grouping")
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
@@ -66,41 +82,44 @@ def test_linear_regression_plot(show_figures, time_series_test_data):
 def test_linear_regression_plot_invalid_test_size(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
-        time_series_linear_regression(test_intensity, test_metadata, "Protein1", 2)
+        time_series_linear_regression(test_intensity, test_metadata, "Protein1", 2, "Without Grouping")
     return
 
 def test_linear_regression_outputs(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2)
-    assert "train_root_mean_squared" in outputs
-    assert "test_root_mean_squared" in outputs
-    assert "train_r2_score" in outputs
-    assert "test_r2_score" in outputs
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2, "Without Grouping")
+    assert "scores" in outputs
     return
 
 
-def test_ransac_regression_plot(show_figures, time_series_test_data):
+def test_ransac_regression_plot_with_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2)
+    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2, "With Grouping")
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
         fig.show()
     return
 
-def test_linear_ransac_plot_invalid_test_size(time_series_test_data):
+def test_ransac_regression_plot_without_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2, "Without Grouping")
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_ransac_plot_invalid_test_size(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
-        time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 2)
+        time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 2, "Without Grouping")
     return
 
 def test_ransac_regression_outputs(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2)
-    assert "train_root_mean_squared" in outputs
-    assert "test_root_mean_squared" in outputs
-    assert "train_r2_score" in outputs
-    assert "test_r2_score" in outputs
+    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2, "Without Grouping")
+    assert "scores" in outputs
     return
 
 
