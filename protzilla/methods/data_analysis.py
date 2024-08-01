@@ -14,7 +14,12 @@ from protzilla.data_analysis.differential_expression_mann_whitney import (
 )
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
-from protzilla.data_analysis.time_series_regression_analysis import time_series_linear_regression, time_series_ransac_regression, adfuller_test
+from protzilla.data_analysis.time_series_regression_analysis import (
+    time_series_linear_regression,
+    time_series_ransac_regression,
+     adfuller_test,
+    time_series_auto_arima,
+)
 from protzilla.data_analysis.ptm_analysis import filter_peptides_of_protein, ptms_per_sample, \
     ptms_per_protein_and_sample
 from protzilla.data_analysis.model_evaluation import evaluate_classification_model
@@ -809,8 +814,8 @@ class TimeSeriesLinearRegression(PlotStep):
         "input_df",
         "metadata_df",
         "protein_group",
+        "train_size",
         "grouping",
-        "test_size",
     ]
     output_keys = [
         "scores",
@@ -834,8 +839,8 @@ class TimeSeriesRANSACRegression(PlotStep):
         "input_df",
         "metadata_df",
         "protein_group",
+        "train_size",
         "grouping",
-        "test_size",
     ]
     output_keys = [
         "scores",
@@ -869,6 +874,36 @@ class TimeSeriesADFullerTest(DataAnalysisStep):
 
     def method(self, inputs: dict) -> dict:
         return adfuller_test(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["input_df"] = steps.get_step_output(Step, "peptide_df", inputs["input_df"])
+        inputs["metadata_df"] = steps.metadata_df
+        return inputs
+
+
+class TimeSeriesAutoARIMA(PlotStep):
+    display_name = "Auto ARIMA (AutoRegressive Integrated Moving Average)"
+    operation = "Time series analysis"
+    method_description = (
+        "Perform Auto ARIMA on the time series data for a given protein group."
+    )
+
+    input_keys = [
+        "input_df",
+        "metadata_df",
+        "protein_group",
+        "seasonal",
+        "m",
+        "train_size",
+        "forecast_steps",
+        "grouping",
+    ]
+    output_keys = [
+        "scores",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return time_series_auto_arima(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["input_df"] = steps.get_step_output(Step, "peptide_df", inputs["input_df"])

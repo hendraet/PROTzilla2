@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-from protzilla.data_analysis.time_series_helper import convert_time_to_datetime
+from protzilla.data_analysis.time_series_helper import convert_time_to_hours
 from protzilla.constants.colors import PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
 from sklearn.linear_model import LinearRegression, RANSACRegressor
@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller
+from pmdarima import auto_arima
 from plotly.subplots import make_subplots
 
 colors = {
@@ -27,21 +28,21 @@ def time_series_linear_regression(
         input_df: pd.DataFrame,
         metadata_df: pd.DataFrame,
         protein_group: str,
+        train_size: float = 0.2,
         grouping: str = None,
-        test_size: float = 0.2,
 ):
     """
     Perform linear regression on the time series data for a given protein group.
     :param input_df: Peptide dataframe which contains the intensity of each sample
     :param metadata_df: Metadata dataframe which contains the timestamps
     :param protein_group: Protein group to perform the analysis on
-    :param test_size: The proportion of the dataset to include in the test split
+    :param train_size: The proportion of the dataset to include in the test split
     :param grouping: Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups
 
     :return: A dictionary containing the root mean squared error and r2 score for the training and test sets
     """
     color_index = 0
-    if test_size < 0 or test_size > 1:
+    if train_size < 0 or train_size > 1:
         raise ValueError("Test size should be between 0 and 1")
 
     input_df = input_df[input_df['Protein ID'] == protein_group]
@@ -53,7 +54,7 @@ def time_series_linear_regression(
         copy=False,
     )
 
-    input_df["Time"] = input_df["Time"].apply(convert_time_to_datetime)
+    input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
     input_df = input_df.interpolate(method='linear', axis=0)
     X = input_df[["Time"]]
     y = input_df["Intensity"]
@@ -69,7 +70,7 @@ def time_series_linear_regression(
             X_group = group_df[["Time"]]
             y_group = group_df["Intensity"]
 
-            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, test_size=test_size, shuffle=False)
+            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, test_size=train_size, shuffle=False)
             model = LinearRegression()
             model.fit(X_train, y_train)
 
@@ -113,7 +114,7 @@ def time_series_linear_regression(
             })
 
     else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, shuffle=False)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_size, shuffle=False)
         model = LinearRegression()
         model.fit(X_train, y_train)
 
@@ -207,21 +208,21 @@ def time_series_ransac_regression(
         input_df: pd.DataFrame,
         metadata_df: pd.DataFrame,
         protein_group: str,
+        train_size: float,
         grouping: str,
-        test_size: float,
 ):
     """
     Perform RANSAC regression on the time series data for a given protein group.
     :param input_df: Peptide dataframe which contains the intensity of each sample
     :param metadata_df: Metadata dataframe which contains the timestamps
     :param protein_group: Protein group to perform the analysis on
-    :param test_size: The proportion of the dataset to include in the test split
+    :param train_size: The proportion of the dataset to include in the test split
 
     :return: A dictionary containing the root mean squared error and r2 score for the training and test sets
     """
 
     color_index = 0
-    if test_size < 0 or test_size > 1:
+    if train_size < 0 or train_size > 1:
         raise ValueError("Test size should be between 0 and 1")
 
     input_df = input_df[input_df['Protein ID'] == protein_group]
@@ -233,7 +234,7 @@ def time_series_ransac_regression(
         copy=False,
     )
 
-    input_df["Time"] = input_df["Time"].apply(convert_time_to_datetime)
+    input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
     input_df = input_df.interpolate(method='linear', axis=0)
     X = input_df[["Time"]]
     y = input_df["Intensity"]
@@ -249,7 +250,7 @@ def time_series_ransac_regression(
             X_group = group_df[["Time"]]
             y_group = group_df["Intensity"]
 
-            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, test_size=test_size, shuffle=False)
+            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, test_size=train_size, shuffle=False)
             model = RANSACRegressor(base_estimator=LinearRegression())
             model.fit(X_train, y_train)
 
@@ -305,7 +306,7 @@ def time_series_ransac_regression(
             })
 
     else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, shuffle=False)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_size, shuffle=False)
         model = RANSACRegressor(base_estimator=LinearRegression())
         model.fit(X_train, y_train)
 
@@ -476,3 +477,174 @@ def adfuller_test(
         messages=messages,
     )
 
+
+def time_series_auto_arima(
+    input_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
+    protein_group: str,
+    seasonal: str,
+    m: int,
+    train_size: float,
+    forecast_steps: int,
+    grouping: str,
+) -> dict:
+    """
+    Perform an automatic ARIMA model selection on the time series data for a given protein group.
+    :param input_df: Peptide dataframe which contains the intensity of each sample
+    :param metadata_df: Metadata dataframe which contains the timestamps
+    :param protein_group: Protein group to perform the analysis on
+    :param seasonal: Whether the ARIMA model should be seasonal
+    :param m: The number of time steps for a single seasonal period (ignored if seasonal=False)
+    :param train_size: The proportion of the dataset to include in the test split
+    :param forecast_steps: The number of steps to forecast
+
+    :return: A dictionary containing the root mean squared error and r2 score for the training and test sets
+    """
+
+    color_index = 0
+
+    if train_size < 0 or train_size > 1:
+        raise ValueError("Train size should be between 0 and 1")
+    if seasonal == "Yes":
+        seasonal = True
+    else:
+        seasonal = False
+
+    input_df = input_df[input_df['Protein ID'] == protein_group]
+
+    input_df = pd.merge(
+        left=input_df,
+        right=metadata_df,
+        on="Sample",
+        copy=False,
+    )
+
+    input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
+    input_df.set_index("Time", inplace=True)
+    input_df = input_df.interpolate(method='linear', axis=0)
+
+    data = input_df["Intensity"]
+
+    train_size = int(len(data) * train_size)
+    train, test = data[:train_size], data[train_size:]
+
+    # Fit the ARIMA model
+    model = auto_arima(
+        train,
+        seasonal=seasonal,
+        m=m,
+        trace=True,
+        error_action='ignore',
+        suppress_warnings=True,
+        stepwise=True,
+    )
+
+    # Forecast the test set
+    forecast = model.predict(n_periods=forecast_steps)
+
+    last_time = data.index[-1] +1
+    forecast_index = np.arange(last_time, last_time + forecast_steps)
+    forecast_series = pd.Series(forecast, index=forecast_index)
+
+    test_for_comparison = test[:forecast_steps]
+    forecast_for_comparison = forecast_series[: len(test_for_comparison)]
+
+
+
+    test_rmse = np.sqrt(mean_squared_error(test_for_comparison, forecast_for_comparison))
+    test_r2 = r2_score(test_for_comparison, forecast_for_comparison)
+    train_rmse = np.sqrt(mean_squared_error(train, model.predict_in_sample()))
+    train_r2 = r2_score(train, model.predict_in_sample())
+
+    fig = make_subplots(rows=1, cols=2, column_widths=[0.7, 0.3])
+
+    scores = []
+
+    plot_df = pd.DataFrame({
+        'Time': test.index[:forecast_steps],
+        'Intensity': test[:forecast_steps],
+        'Predicted': forecast_series,
+        'Inlier': np.abs(test[:forecast_steps] - forecast_series) < (1.5 * np.std(test[:forecast_steps]))
+    })
+
+    fig.add_trace(go.Scatter(
+        x=plot_df['Time'],
+        y=plot_df['Intensity'],
+        mode='markers',
+        name='Actual Intensity',
+        marker=dict(color='blue')
+    ), row=1, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=plot_df['Time'],
+        y=plot_df['Predicted'],
+        mode='lines',
+        name='Predicted Intensity',
+        line=dict(color='red')
+    ), row=1, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=plot_df[plot_df['Inlier'] == False]['Time'],
+        y=plot_df[plot_df['Inlier'] == False]['Intensity'],
+        mode='markers',
+        name='Outliers',
+        marker=dict(color='green')
+    ), row=1, col=1)
+
+    scores.append({
+        'group': 'Overall',
+         'train_root_mean_squared': train_rmse,
+        'test_root_mean_squared': test_rmse,
+        'train_r2_score': train_r2,
+        'test_r2_score': test_r2,
+    })
+
+    # Add annotation text as a separate trace in the subplot
+    annotation_text = "<br>".join([
+        f"Group: {res['group']}<br>Train RMSE: {res['train_root_mean_squared']:.3f}<br>"
+        f"Test RMSE: {res['test_root_mean_squared']:.3f}<br>"
+        f"Train R²: {res['train_r2_score']:.3f}<br>"
+        f"Test R²: {res['test_r2_score']:.3f}"
+        for res in scores
+    ])
+
+    fig.add_trace(go.Scatter(
+        x=[0],
+        y=[0.25],
+        text=[annotation_text],
+        mode='text',
+        textfont=dict(size=12),
+        showlegend=False
+    ), row=1, col=2)
+
+    fig.update_layout(
+        title=f"Intensity over Time for {protein_group}",
+        plot_bgcolor=colors["plot_bgcolor"],
+        xaxis_gridcolor=colors["gridcolor"],
+        yaxis_gridcolor=colors["gridcolor"],
+        xaxis_linecolor=colors["linecolor"],
+        yaxis_linecolor=colors["linecolor"],
+        xaxis_title="Time",
+        yaxis_title="Intensity",
+        legend_title="Legend",
+        autosize=True,
+        margin=dict(l=100, r=100, t=100, b=50),
+        legend=dict(
+            yanchor="top",
+            y=0.95,
+            xanchor="right",
+            x=0.825
+        )
+    )
+
+    fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
+    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
+
+    fig.update_annotations(font_size=12)
+
+    fig.show()
+
+    return dict(
+        scores=scores,
+        plots=[fig],
+    )
