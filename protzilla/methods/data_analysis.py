@@ -125,7 +125,9 @@ class DifferentialExpressionTTest(DataAnalysisStep):
 class DifferentialExpressionLinearModel(DataAnalysisStep):
     display_name = "Linear Model"
     operation = "differential_expression"
-    method_description = "A function to fit a linear model using ordinary least squares for each protein. The linear model fits the protein intensities on Y axis and the grouping on X for group1 X=-1 and group2 X=1. The p-values are corrected for multiple testing."
+    method_description = "A function to fit a linear model using ordinary least squares for each protein. The linear " \
+                         "model fits the protein intensities on Y axis and the grouping on X for group1 X=-1 and " \
+                         "group2 X=1. The p-values are corrected for multiple testing."
 
     input_keys = [
         "intensity_df",

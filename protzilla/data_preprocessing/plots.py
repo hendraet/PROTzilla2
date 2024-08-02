@@ -5,17 +5,15 @@ import plotly.graph_objects as go
 from plotly.graph_objects import Figure
 from plotly.subplots import make_subplots
 
-from protzilla.data_preprocessing.plots_helper import generate_tics, style_text, enhanced_font_size_spacing, add_spacing
+from protzilla.data_preprocessing.plots_helper import generate_tics, style_text, add_spacing, get_text_parameters, get_enhanced_reading_value
 from protzilla.utilities import default_intensity_column
 import protzilla.constants.colors as colorscheme
-
 
 
 def create_pie_plot(
         names_of_sectors: "list[str]",
         values_of_sectors: "list[int]",
         heading: str = "",
-        enhanced_reading: bool = False
 ) -> Figure:
     """
     Function to create generic pie graph from data.
@@ -25,11 +23,10 @@ def create_pie_plot(
     :param names_of_sectors: Name of parts (so-called sectors) or categories
     :param values_of_sectors: Corresponding values for sectors
     :param heading: Header for the graph - for example the topic
-    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a pie chart of the data
     """
-
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    enhanced_reading = get_enhanced_reading_value()
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
     if any(i < 0 for i in values_of_sectors):
         raise ValueError
@@ -70,7 +67,6 @@ def create_bar_plot(
         heading: str = "",
         y_title: str = "",
         x_title: str = "",
-        enhanced_reading: bool = False
 ) -> Figure:
     """
     Function to create generic bar graph from data.
@@ -82,14 +78,13 @@ def create_bar_plot(
     :param heading: Header for the graph - for example the topic
     :param y_title: Optional y-axis title.
     :param x_title: Optional x-axis title.
-    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a bar chart of the data
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     patterns = ['/', '\\', 'x']
     fig = Figure()
 
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
     for i, (value, label) in enumerate(zip(values_of_sectors, names_of_sectors)):
         marker = {
@@ -129,7 +124,7 @@ def create_bar_plot(
     fig.update_xaxes(ticktext=[
         style_text(label, add_letter_spacing, add_word_spacing) for
         label in names_of_sectors],
-                     tickvals=names_of_sectors)
+        tickvals=names_of_sectors)
     return fig
 
 
@@ -142,8 +137,7 @@ def create_box_plots(
         y_title: str = "",
         x_title: str = "",
         group_by: str = "None",
-        visual_transformation: str = "linear",
-        enhanced_reading: bool = False
+        visual_transformation: str = "linear"
 ) -> Figure:
     """
     A function to create a boxplot for visualisation
@@ -167,7 +161,6 @@ def create_box_plots(
     "Protein ID" to group by protein. Leave "None" to get ungrouped\
     conventional graphs. If set the function will ignore the\
     graph_type argument. Default is "None".
-    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a boxplot of the data
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
@@ -180,7 +173,8 @@ def create_box_plots(
     intensity_name_a = default_intensity_column(dataframe_a)
     intensity_name_b = default_intensity_column(dataframe_b)
 
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
+
 
     if group_by in {"Sample", "Protein ID"}:
         fig = make_subplots(rows=1, cols=2)
@@ -240,16 +234,15 @@ def create_box_plots(
 
 
 def create_histograms(
-    dataframe_a: pd.DataFrame,
-    dataframe_b: pd.DataFrame,
-    name_a: str = "",
-    name_b: str = "",
-    heading: str = "",
-    y_title: str = "",
-    x_title: str = "",
-    visual_transformation: str = "linear",
-    overlay: bool = False,
-    enhanced_reading: bool = False
+        dataframe_a: pd.DataFrame,
+        dataframe_b: pd.DataFrame,
+        name_a: str = "",
+        name_b: str = "",
+        heading: str = "",
+        y_title: str = "",
+        x_title: str = "",
+        visual_transformation: str = "linear",
+        overlay: bool = False,
 ) -> Figure:
     """
     A function to create a histogram for visualisation
@@ -268,7 +261,6 @@ def create_histograms(
     :param x_title: Optional x-axis title for graphs.
     :param overlay: Specifies whether to draw one Histogram with overlay or two separate histograms
     :param visual_transformation: Visual transformation of the y-axis data.
-    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a plotly Figure object
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
@@ -299,7 +291,8 @@ def create_histograms(
     if overlay:
         binsize_a = binsize_b = max(binsize_a, binsize_b)
 
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    enhanced_reading = get_enhanced_reading_value()
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
     if enhanced_reading:
         name_a = style_text(name_a, add_letter_spacing, add_word_spacing)
@@ -364,7 +357,6 @@ def create_anomaly_score_bar_plot(
         anomaly_df: pd.DataFrame,
         colour_outlier: str = None,
         colour_non_outlier: str = None,
-        enhanced_reading: bool = False
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -377,7 +369,6 @@ def create_anomaly_score_bar_plot(
     :param colour_non_outlier: hex code for colour depicting the
     non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
     non-outlier colour
-    :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a plotly Figure object
     """
     colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
@@ -388,16 +379,15 @@ def create_anomaly_score_bar_plot(
     if colour_non_outlier is None:
         colour_non_outlier = colors[0]
 
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    enhanced_reading = get_enhanced_reading_value()
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
-    # Mapping for the legend labels
     outlier_label = "True"
     non_outlier_label = "False"
     if enhanced_reading:
         outlier_label = style_text(outlier_label, add_letter_spacing, add_word_spacing)
         non_outlier_label = style_text(non_outlier_label, add_letter_spacing, add_word_spacing)
 
-    # Replace boolean values with styled labels
     anomaly_df["Outlier Label"] = anomaly_df["Outlier"].replace({
         True: outlier_label,
         False: non_outlier_label
@@ -447,12 +437,12 @@ def create_anomaly_score_bar_plot(
 
     return fig
 
+
 def create_pca_2d_scatter_plot(
         pca_df: pd.DataFrame,
         explained_variance_ratio: list,
         colour_outlier: str = None,
         colour_non_outlier: str = None,
-        enhanced_reading: bool = False
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -480,7 +470,8 @@ def create_pca_2d_scatter_plot(
     if colour_non_outlier is None:
         colour_non_outlier = colors[0]
 
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    enhanced_reading = get_enhanced_reading_value()
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
     outlier_label = "Outlier"
     non_outlier_label = "Non-Outlier"
@@ -525,12 +516,12 @@ def create_pca_2d_scatter_plot(
 
     return fig
 
+
 def create_pca_3d_scatter_plot(
-    pca_df: pd.DataFrame,
-    explained_variance_ratio: list,
-    colour_outlier: str = None,
-    colour_non_outlier: str = None,
-    enhanced_reading: bool = False
+        pca_df: pd.DataFrame,
+        explained_variance_ratio: list,
+        colour_outlier: str = None,
+        colour_non_outlier: str = None,
 ) -> Figure:
     """
     This function creates a graph visualising the outlier
@@ -557,7 +548,8 @@ def create_pca_3d_scatter_plot(
     if colour_non_outlier is None:
         colour_non_outlier = colors[0]
 
-    add_font_size, add_letter_spacing, add_word_spacing = enhanced_font_size_spacing(enhanced_reading)
+    enhanced_reading = get_enhanced_reading_value()
+    add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
     fig = go.Figure(
         data=go.Scatter3d(
@@ -575,7 +567,6 @@ def create_pca_3d_scatter_plot(
     y_percent = round(explained_variance_ratio[1], 4) * 100
     z_percent = round(explained_variance_ratio[2], 4) * 100
 
-    # Create axis titles with spacing adjusted by adding spaces manually
     xaxis_title = f"Principal Component 1 ({x_percent:.2f} %)"
     yaxis_title = f"Principal Component 2 ({y_percent:.2f} %)"
     zaxis_title = f"Principal Component 3 ({z_percent:.2f} %)"
@@ -599,7 +590,4 @@ def create_pca_3d_scatter_plot(
     )
 
     return fig
-#todo: this plot doesnt work with bigger spacing because the axes are not filly readable
-
-
-
+# todo: this plot doesnt work with bigger spacing because the axes are not filly readable

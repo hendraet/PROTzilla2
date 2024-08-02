@@ -40,4 +40,3 @@ class EnhancedReading(CustomisingStep):
 
     def method(self, inputs):
         return enhanced_reading_method(**inputs)
-    # todo:check if i can just return inputs

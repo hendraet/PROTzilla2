@@ -1,5 +1,5 @@
 import protzilla.constants.colors as color_constants
-
+import protzilla.constants.text as text_constants
 
 def customise(colors: str, custom_colors: str) -> dict:
     if colors != "custom":
@@ -10,5 +10,6 @@ def customise(colors: str, custom_colors: str) -> dict:
 
 
 def enhanced_reading_method(enhanced_reading: bool) -> dict:
+    text_constants.get_text_parameters(enhanced_reading)
     return {'enhanced_reading': enhanced_reading}
-    # todo:do i need that method?
+

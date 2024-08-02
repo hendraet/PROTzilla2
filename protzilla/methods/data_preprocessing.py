@@ -20,7 +20,7 @@ class DataPreprocessingStep(Step):
     section = "data_preprocessing"
     output_keys = ["protein_df"]
 
-    plot_input_names = ["protein_df", "colors"]
+    plot_input_names = ["protein_df"]
     plot_output_names = ["plots"]
 
     def __init__(self, *args, **kwargs):
@@ -30,7 +30,6 @@ class DataPreprocessingStep(Step):
     def insert_dataframes(self, steps: StepManager, inputs: dict) -> dict:
         inputs["protein_df"] = steps.protein_df
         inputs["peptide_df"] = steps.get_step_output(Step, "peptide_df")
-        inputs["enhanced_reading"] = steps.get_step_output(Step, "enhanced_reading")
         return inputs
 
     def plot(self, inputs: dict = None):
@@ -169,7 +168,7 @@ class TransformationLog(DataPreprocessingStep):
     operation = "transformation"
     method_description = "Transform data by log"
 
-    input_keys = [ "protein_df", "peptide_df", "log_base"]
+    input_keys = ["protein_df", "peptide_df", "log_base"]
 
     def method(self, inputs):
         return transformation.by_log(**inputs)
