@@ -590,4 +590,4 @@ def create_pca_3d_scatter_plot(
     )
 
     return fig
-# todo: this plot doesnt work with bigger spacing because the axes are not filly readable
+# todo: this plot doesnt work with bigger spacing because the axes are not fully readable
