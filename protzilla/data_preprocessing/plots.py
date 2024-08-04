@@ -37,7 +37,7 @@ def create_pie_plot(
     fig = px.pie(
         names=names_of_sectors,
         values=values_of_sectors,
-        color_discrete_sequence=colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+        color_discrete_sequence=colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
     )
 
     fig.update_layout(
@@ -80,7 +80,7 @@ def create_bar_plot(
     :param x_title: Optional x-axis title.
     :return: returns a bar chart of the data
     """
-    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
     patterns = ['/', '\\', 'x']
     fig = Figure()
 
@@ -163,7 +163,7 @@ def create_box_plots(
     graph_type argument. Default is "None".
     :return: returns a boxplot of the data
     """
-    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
     if group_by not in {"None", "Sample", "Protein ID"}:
         raise ValueError(
@@ -263,7 +263,7 @@ def create_histograms(
     :param visual_transformation: Visual transformation of the y-axis data.
     :return: returns a plotly Figure object
     """
-    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
     if visual_transformation not in {"linear", "log10"}:
         raise ValueError(
@@ -365,13 +365,13 @@ def create_anomaly_score_bar_plot(
     :param anomaly_df: pandas Dataframe that contains the anomaly score for each\
     sample, including outliers and on-outliers samples
     :param colour_outlier: hex code for colour depicting the outliers.
-    Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE outlier colour
+    Default: PROTZILLA_DISCRETE_COLOR_SEQUENCE outlier colour
     :param colour_non_outlier: hex code for colour depicting the
-    non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    non-outliers. Default: PROTZILLA_DISCRETE_COLOR_SEQUENCE
     non-outlier colour
     :return: returns a plotly Figure object
     """
-    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
     if colour_outlier is None:
         colour_outlier = colors[1]
@@ -454,15 +454,15 @@ def create_pca_2d_scatter_plot(
     :param explained_variance_ratio: a list that contains the\
     explained variation for each component
     :param colour_outlier: hex code for colour depicting the outliers.
-    Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE outlier colour
+    Default: PROTZILLA_DISCRETE_COLOR_SEQUENCE outlier colour
     :param colour_non_outlier: hex code for colour depicting the
-    non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    non-outliers. Default: PROTZILLA_DISCRETE_COLOR_SEQUENCE
     non-outlier colour
     :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
 
     :return: returns a plotly Figure object
     """
-    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
     if colour_outlier is None:
         colour_outlier = colors[1]
@@ -533,14 +533,14 @@ def create_pca_3d_scatter_plot(
     :param explained_variance_ratio: a list that contains the\
     explained variation for each component
     :param colour_outlier: hex code for colour depicting the outliers.
-    Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE outlier colour
+    Default: PROTZILLA_DISCRETE_COLOR_SEQUENCE outlier colour
     :param colour_non_outlier: hex code for colour depicting the
-    non-outliers. Default: PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    non-outliers. Default: PROTZILLA_DISCRETE_COLOR_SEQUENCE
     non-outlier colour
     :param enhanced_reading: Boolean to determine if the font size and spacing should be increased.
     :return: returns a plotly Figure object
     """
-    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
     if colour_outlier is None:
         colour_outlier = colors[1]

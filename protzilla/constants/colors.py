@@ -1,14 +1,14 @@
 import re
 
-PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
+"""PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
     "#87A8B9",  # light blue
     "#CE5A5A",  # red
     "#8E3325",  # dark red
     "#E2A46D"   # orange
-]
+]"""
 
-PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE = [
+PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
     "#CE5A5A",  # red
     "#87A8B9",  # light blue
@@ -50,29 +50,37 @@ MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE = [
     "#333333"   # black-ish
 ]
 
+HIGH_CONTRAST_DISCRETE_COLOR_SEQUENCE = [
+    "#2E3850",  # dark blue
+    "#E44D4D",  # red
+    "#5BBBEC",  # light blue
+    "#ABABAF",  # grey
+    "#FFC000"   # orange
+]
 
 def get_color_sequence(colors: str):
-    global PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    global PROTZILLA_DISCRETE_COLOR_SEQUENCE
     color_sequences = {
-        "standard": PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE,
+        "standard": PROTZILLA_DISCRETE_COLOR_SEQUENCE,
         "protan": PROTAN_DISCRETE_COLOR_SEQUENCE,
         "deutan": DEUTAN_DISCRETE_COLOR_SEQUENCE,
         "tritan": TRITAN_DISCRETE_COLOR_SEQUENCE,
-        "monochromatic": MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE
+        "monochromatic": MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE,
+        "high_contrast": HIGH_CONTRAST_DISCRETE_COLOR_SEQUENCE
     }
 
     if colors in color_sequences:
-        PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE = color_sequences[colors]
+        PROTZILLA_DISCRETE_COLOR_SEQUENCE = color_sequences[colors]
 
 
 def set_custom_sequence(custom_color_sequence: str):
-    global PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    global PROTZILLA_DISCRETE_COLOR_SEQUENCE
 
     if not (is_valid_hex_color_pair(custom_color_sequence)):
         raise ValueError("Invalid hex color pair")
 
     custom_color_list = custom_color_sequence.split(",")
-    PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE = custom_color_list
+    PROTZILLA_DISCRETE_COLOR_SEQUENCE = custom_color_list
 
 
 def is_valid_hex_color_pair(s):

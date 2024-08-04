@@ -15,6 +15,7 @@ class ColorChoices(Enum):
     deutan = "deutan"
     tritan = "tritan"
     monochromatic = "monochromatic"
+    high_contrast = "high_contrast"
     custom = "custom"
 
 

@@ -36,7 +36,7 @@ def scatter_plot(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
-    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
     add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
 
     intensity_df_wide = long_to_wide(input_df) if is_long_format(input_df) else input_df
@@ -149,7 +149,7 @@ def create_volcano_plot(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
-    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
+    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
     enhanced_reading = get_enhanced_reading_value()
     add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
     plot_df = p_values.join(log2_fc.set_index("Protein ID"), on="Protein ID")
@@ -373,12 +373,9 @@ def prot_quant_plot(
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
-    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_OUTLIER_SEQUENCE
-    enhanced_reading = True#get_enhanced_reading_value()
+    data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
+    enhanced_reading = True
     add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
-    add_font_size = 2
-    add_letter_spacing = 2.5
-    add_word_spacing = 8.75
     wide_df = long_to_wide(input_df) if is_long_format(input_df) else input_df
 
     if protein_group not in wide_df.columns:
@@ -486,17 +483,10 @@ def prot_quant_plot(
             line=dict(color=data_colors[1], width=3),
         )
     )
-
-    fig.add_trace(
-        go.Scatter(
-            x=[None],
-            y=[None],
-            mode="markers",
-            marker=dict(color='rgba(0,0,0,0)'),
-            showlegend=True,
-            name="<br><br>"
-        )
-    )
+    experimental_group_name = style_text("<b>Experimental Group</b>", add_letter_spacing,
+                                         add_word_spacing) if enhanced_reading else "Experimental Group"
+    control_group_name = style_text("<b>Control Group</b>", add_letter_spacing,
+                                    add_word_spacing) if enhanced_reading else "Control Group"
 
     fig.add_trace(
         go.Scatter(
@@ -504,7 +494,7 @@ def prot_quant_plot(
             y=[None],
             mode="markers",
             marker=dict(color=color_mapping.get("A")),
-            name=style_text("<b>Experimental Group</b>", add_letter_spacing, add_word_spacing) if enhanced_reading else "Experimental Group",
+            name=experimental_group_name,
         )
     )
 
@@ -514,7 +504,7 @@ def prot_quant_plot(
             y=[None],
             mode="markers",
             marker=dict(color=color_mapping.get("C")),
-            name=style_text("<b>Control Group</b>", add_letter_spacing, add_word_spacing) if enhanced_reading else "Control Group",
+            name=control_group_name,
         )
     )
 
@@ -534,7 +524,7 @@ def prot_quant_plot(
             tickangle=0,
             tickvals=wide_df.index,
             ticktext=[
-                f"<span style='font-size: 10px; color:{color_mapping.get(label[0], 'black')}'><b>•</b></span>"
+                f"<span style='font-size: 12px; color:{color_mapping.get(label[0], 'black')}'><b>•</b></span>"
                 for label in wide_df.index
             ],
         ),

@@ -174,8 +174,12 @@
                                             {% endfor %}
                                         </div>
                                         <div class="form-group">
-                                            <input type="submit" value="Calculate" id="calculate_parameters_submit"
+                                            {% if section == "customising" %}
+                                                <input type="submit" value="Apply" id="calculate_parameters_submit"
                                                    class="btn btn-red mr-auto">
+                                            {% else %}
+                                                <input type="submit" value="Calculate" id="calculate_parameters_submit"
+                                                   class="btn btn-red mr-auto">{% endif %}
                                             {% if section == "data_preprocessing" %}
                                                 <a href="{% url 'runs:plot' run_name %}" id="plot_parameters_submit" class="btn btn-grey {% if not show_plot_button %} disabled {% endif %}">Plot</a>
                                             {% endif %}

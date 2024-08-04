@@ -55,14 +55,6 @@ class VisulaTransformations(Enum):
     log10 = "log10"
 
 
-class ColorChoices(Enum):
-    standard = "standard"
-    protan = "protan"
-    deutan = "deutan"
-    tritan = "tritan"
-    monochromatic = "monochromatic"
-
-
 class FilterProteinsBySamplesMissingForm(MethodForm):
     percentage = CustomFloatField(
         label="Percentage of minimum non-missing samples per protein",
