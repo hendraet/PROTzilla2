@@ -1,4 +1,14 @@
 import re
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Use for plots that require more than 6 colors or a continuous color scale with no neutral middle point
+PROTZILLA_CONTINUOUS_COLOR_SEQUENCE = plt.get_cmap("plasma")
+CVD_CONTINUOUS_COLOR_SEQUENCE = plt.get_cmap("cividis")
+
+# Use for plots that require a neutral middle point e.g. heat maps
+PROTZILLA_DIVERGING_COLOR_SEQUENCE = plt.get_cmap("Spectral")
+CVD_DIVERGING_COLOR_SEQUENCE = plt.get_cmap("BrBG")
 
 PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
@@ -57,7 +67,7 @@ HIGH_CONTRAST_DISCRETE_COLOR_SEQUENCE = [
     "#5BBBEC",  # light blue
     "#ABABAF",  # grey
     "#FFC000",  # orange
-    "#1767CE"   # blue
+    "#1767CE"  # blue
 ]
 
 
@@ -74,6 +84,22 @@ def get_color_sequence(colors: str):
 
     if colors in color_sequences:
         PROTZILLA_DISCRETE_COLOR_SEQUENCE = color_sequences[colors]
+
+
+def get_continuous_color_sequence(colors: str):
+    global PROTZILLA_CONTINUOUS_COLOR_SEQUENCE
+    if colors in ["standard", "high_contrast"]:
+        return
+    else:
+        PROTZILLA_CONTINUOUS_COLOR_SEQUENCE = CVD_CONTINUOUS_COLOR_SEQUENCE
+
+
+def get_diverging_color_sequence(colors: str):
+    global PROTZILLA_DIVERGING_COLOR_SEQUENCE
+    if colors in ["standard", "high_contrast"]:
+        return
+    else:
+        PROTZILLA_DIVERGING_COLOR_SEQUENCE = CVD_DIVERGING_COLOR_SEQUENCE
 
 
 def set_custom_sequence(custom_color_sequence: str):
