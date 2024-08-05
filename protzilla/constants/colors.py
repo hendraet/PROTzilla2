@@ -1,19 +1,12 @@
 import re
 
-"""PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
-    "#4A536A",  # blue
-    "#87A8B9",  # light blue
-    "#CE5A5A",  # red
-    "#8E3325",  # dark red
-    "#E2A46D"   # orange
-]"""
-
 PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
     "#CE5A5A",  # red
     "#87A8B9",  # light blue
     "#a1a5b2",  # grey
-    "#E2A46D"   # orange
+    "#E2A46D",  # orange
+    "#1767CE"  # blue
 ]
 
 PROTAN_DISCRETE_COLOR_SEQUENCE = [
@@ -21,16 +14,18 @@ PROTAN_DISCRETE_COLOR_SEQUENCE = [
     "#daa217",  # yellow
     "#a8b3ef",  # light blue
     "#a1a5b2",  # grey
-    "#0051a9"   # dark blue
+    "#0051a9",  # dark blue
+    "#7D7800"  # dark yellow
 
 ]
-# justify how colors come about
+
 DEUTAN_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
     "#FF911E",  # yellow
     "#A4B6EF",  # light blue
     "#a1a5b2",  # grey
-    "#0062a9"   # dark blue
+    "#0062a9",  # dark blue
+    "#986400"  # dark yellow
 
 ]
 
@@ -39,24 +34,32 @@ TRITAN_DISCRETE_COLOR_SEQUENCE = [
     "#f48e9b",  # pink
     "#6C9AAF",  # light blue
     "#a1a5b2",  # grey
-    "#22c6d5"   # turquoise
+    "#22c6d5"  # turquoise
+    "#9B5D64"  # dark pink
 ]
 
+# This sequence shouldn't be used if the plot requires all six or more colors,
+# without making modifications in the plot itself,
+# as the colors are very similar to each other.
 MONOCHROMATIC_DISCRETE_COLOR_SEQUENCE = [
     "#929292",  # medium grey
     "#4C4C4C",  # dark grey
     "#949494",  # light grey
     "#C5C5C5",  # grey
-    "#333333"   # black-ish
+    "#333333",  # black-ish
+    "#000000"  # black
+
 ]
 
 HIGH_CONTRAST_DISCRETE_COLOR_SEQUENCE = [
     "#2E3850",  # dark blue
-    "#E44D4D",  # red
+    "#F13232",  # red
     "#5BBBEC",  # light blue
     "#ABABAF",  # grey
-    "#FFC000"   # orange
+    "#FFC000",  # orange
+    "#1767CE"   # blue
 ]
+
 
 def get_color_sequence(colors: str):
     global PROTZILLA_DISCRETE_COLOR_SEQUENCE
