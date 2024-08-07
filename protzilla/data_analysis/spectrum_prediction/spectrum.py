@@ -1,8 +1,10 @@
 import asyncio
+import concurrent.futures
 import hashlib
 import json
+import multiprocessing
 import re
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import aiohttp
 import numpy as np
@@ -154,7 +156,8 @@ class KoinaModel(SpectrumPredictor):
         self.prediction_df = prediction_df
         self.preprocess()
         self.verify_dataframe()
-        return self.prediction_df
+        # TODO remove
+        self.prediction_df = self.prediction_df[:16000]
 
     def verify_dataframe(self, prediction_df: Optional[pd.DataFrame] = None):
         if prediction_df is None:
@@ -177,7 +180,10 @@ class KoinaModel(SpectrumPredictor):
         if self.preprocess_args.get("filter_ptms", True):
             self.filter_ptms()
 
-        # self.prediction_df[DataKeys.PEPTIDE_SEQUENCE] = self.prediction_df[DataKeys.PEPTIDE_SEQUENCE].str.replace("J", "L")
+        if self.preprocess_args.get("replace_J_with_L", False):
+            self.prediction_df[DataKeys.PEPTIDE_SEQUENCE] = self.prediction_df[
+                DataKeys.PEPTIDE_SEQUENCE
+            ].str.replace("J", "L")
 
     def filter_ptms(self):
         self.prediction_df = self.prediction_df[
@@ -186,19 +192,47 @@ class KoinaModel(SpectrumPredictor):
             )
         ]
 
+    # def predict(self):
+    #     predicted_spectra = []
+    #     slice_indices = self.slice_dataframe()
+    #     formatted_data = self.format_dataframes(slice_indices)
+    #     response_data = asyncio.run(self.make_request(formatted_data, slice_indices))
+    #     for response, indices in tqdm(
+    #         response_data,
+    #         desc="Processing predictions",
+    #         total=len(response_data),
+    #     ):
+    #         predicted_spectra.extend(
+    #             self.process_response(self.prediction_df.loc[indices], response)
+    #         )
+    #     return predicted_spectra
     def predict(self):
         predicted_spectra = []
         slice_indices = self.slice_dataframe()
         formatted_data = self.format_dataframes(slice_indices)
         response_data = asyncio.run(self.make_request(formatted_data, slice_indices))
-        for response, indices in tqdm(
-            response_data,
-            desc="Processing predictions",
-            total=len(response_data),
-        ):
-            predicted_spectra.extend(
-                self.process_response(self.prediction_df.loc[indices], response)
-            )
+
+        num_processes = min(multiprocessing.cpu_count() // 2, len(response_data))
+
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=num_processes
+        ) as executor:
+            futures = []
+            for response, indices in response_data:
+                future = executor.submit(
+                    self.process_response_batch,
+                    self.prediction_df.loc[indices],
+                    response,
+                )
+                futures.append(future)
+
+            for future in tqdm(
+                concurrent.futures.as_completed(futures),
+                total=len(futures),
+                desc="Processing predictions",
+            ):
+                predicted_spectra.extend(future.result())
+
         return predicted_spectra
 
     def format_dataframes(self, slice_indices):
@@ -294,8 +328,16 @@ class KoinaModel(SpectrumPredictor):
                     responses.append((await response.json(), indices))
         return responses
 
+    # @staticmethod
+    # def process_response(request: pd.DataFrame, response: dict) -> list[Spectrum]:
+    #     prepared_data = KoinaModel.prepare_data(response)
+    #     return [
+    #         KoinaModel.create_spectrum(row, prepared_data, i)
+    #         for i, (_, row) in enumerate(request.iterrows())
+    #     ]
+
     @staticmethod
-    def process_response(request: pd.DataFrame, response: dict) -> list[Spectrum]:
+    def process_response_batch(request: pd.DataFrame, response: dict) -> List[Spectrum]:
         prepared_data = KoinaModel.prepare_data(response)
         return [
             KoinaModel.create_spectrum(row, prepared_data, i)
@@ -477,7 +519,7 @@ class SpectrumExporter:
 
         output_df = pd.DataFrame()
         spectrum_dfs = []
-        for spectrum in tqdm(spectra, desc="Preparing spectra"):
+        for spectrum in tqdm(spectra, desc="Preparing spectra for export"):
             spectrum_df = spectrum.spectrum.copy()
             spectrum_df[GenericTextKeys.PEPTIDE_MZ] = spectrum.peptide_mz
             spectrum_df[GenericTextKeys.PEPTIDE_SEQUENCE] = spectrum.peptide_sequence

@@ -31,7 +31,7 @@ class DataKeys(StrEnum):
 
     PEPTIDE_SEQUENCE = "peptide_sequences"
     PRECURSOR_CHARGE = "precursor_charges"
-    PRECURSOR_MZ = "peptide_m/z"
+    PRECURSOR_MZ = "precursor_m/z"
     MZ = "m/z"
     COLLISION_ENERGY = "collision_energies"
     FRAGMENTATION_TYPE = "fragmentation_types"

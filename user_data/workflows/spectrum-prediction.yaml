@@ -1,0 +1,10 @@
+df_mode: disk_memory
+steps:
+  - form_inputs: { }
+    inputs: { }
+    instance_identifier: EvidenceImport_1
+    type: EvidenceImport
+  - form_inputs: { }
+    inputs: { }
+    instance_identifier: PredictSpectra_1
+    type: PredictSpectra
