@@ -3,6 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils import (
+    DataKeys,
+)
 from protzilla.importing.ms_data_import import clean_protein_groups
 
 
@@ -84,6 +87,7 @@ def evidence_import(file_path, intensity_name, map_to_uniprot) -> dict:
         "LFQ intensity" if intensity_name == "iBAQ" else intensity_name
     )
 
+    # TODO convert these magic strings to constants in a StrEnum ...
     id_columns = [
         "Experiment",
         "Leading razor protein",
@@ -108,8 +112,15 @@ def evidence_import(file_path, intensity_name, map_to_uniprot) -> dict:
 
     df = read[id_columns]
 
-    df = df.rename(columns={"Leading razor protein": "Protein ID"})
-    df = df.rename(columns={"Experiment": "Sample"})
+    df = df.rename(
+        columns={
+            "Leading razor protein": "Protein ID",
+            "Experiment": "Sample",
+            "m/z": DataKeys.PRECURSOR_MZ,
+            "Charge": DataKeys.PRECURSOR_CHARGE,
+        }
+    )
+    df = df.rename(columns={})
 
     df.dropna(subset=["Protein ID"], inplace=True)
     df.sort_values(

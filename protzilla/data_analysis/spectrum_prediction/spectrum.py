@@ -66,7 +66,7 @@ class Spectrum:
     def _initialize_metadata(self):
         self.metadata.setdefault(DataKeys.PEPTIDE_SEQUENCE, self.peptide_sequence)
         self.metadata.setdefault(DataKeys.PRECURSOR_CHARGE, self.precursor_charge)
-        self.metadata.setdefault(DataKeys.PEPTIDE_MZ, self.peptide_mz)
+        self.metadata.setdefault(DataKeys.PRECURSOR_MZ, self.peptide_mz)
         # self.metadata.setdefault(DATA_KEYS.COLLISION_ENERGY, None) # TODO delete if not necessary
         # self.metadata.setdefault(DATA_KEYS.FRAGMENTATION_TYPE, None)
 
@@ -110,9 +110,15 @@ class Spectrum:
 
 class SpectrumPredictor:
     def __init__(self, prediction_df: Optional[pd.DataFrame]):
-        self.prediction_df = prediction_df
+        if prediction_df is not None:
+            self.load_prediction_df(prediction_df)
 
     def predict(self):
+        raise NotImplementedError(
+            "This method should be implemented in the child class"
+        )
+
+    def preprocess(self):
         raise NotImplementedError(
             "This method should be implemented in the child class"
         )
@@ -121,6 +127,11 @@ class SpectrumPredictor:
         raise NotImplementedError(
             "This method should be implemented in the child class"
         )
+
+    def load_prediction_df(self, prediction_df: pd.DataFrame):
+        self.prediction_df = prediction_df
+        self.preprocess()
+        self.verify_dataframe()
 
 
 class KoinaModel(SpectrumPredictor):
@@ -138,8 +149,6 @@ class KoinaModel(SpectrumPredictor):
         self.required_keys = required_keys
         self.KOINA_URL = url
         self.preprocess_args = kwargs.get("preprocess_args", {})
-        if prediction_df is not None:
-            self.load_prediction_df(prediction_df)
 
     def load_prediction_df(self, prediction_df: pd.DataFrame):
         self.prediction_df = prediction_df
@@ -156,7 +165,7 @@ class KoinaModel(SpectrumPredictor):
 
     def preprocess(self):
         self.prediction_df = (
-            self.prediction_df[self.required_keys + [DataKeys.PEPTIDE_MZ]]
+            self.prediction_df[self.required_keys + [DataKeys.PRECURSOR_MZ]]
             .drop_duplicates()
             .reset_index(drop=True)
         )
@@ -310,7 +319,7 @@ class KoinaModel(SpectrumPredictor):
         try:
             peptide_sequence = row.get(DataKeys.PEPTIDE_SEQUENCE)
             precursor_charge = row.get(DataKeys.PRECURSOR_CHARGE)
-            peptide_mz = row.get(DataKeys.PEPTIDE_MZ)
+            peptide_mz = row.get(DataKeys.PRECURSOR_MZ)
             collision_energy = row.get(DataKeys.COLLISION_ENERGY)
             fragmentation_type = row.get(DataKeys.FRAGMENTATION_TYPE)
             mz_values = prepared_data.get(OutputKeys.MZ_VALUES)[index]
@@ -379,7 +388,7 @@ class SpectrumPredictorFactory:
 class SpectrumExporter:
     msp_metadata_mapping = {
         DataKeys.PRECURSOR_CHARGE: "Charge",
-        DataKeys.PEPTIDE_MZ: "Parent",
+        DataKeys.PRECURSOR_MZ: "Parent",
     }
 
     @staticmethod

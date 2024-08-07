@@ -53,7 +53,7 @@ def prediction_df_complete():
             DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
             DataKeys.PRECURSOR_CHARGE: [1, 2],
             DataKeys.COLLISION_ENERGY: [30, 30],
-            DataKeys.PEPTIDE_MZ: [100, 200],
+            DataKeys.PRECURSOR_MZ: [100, 200],
             DataKeys.FRAGMENTATION_TYPE: [
                 FragmentationType.HCD,
                 FragmentationType.HCD,
@@ -68,7 +68,7 @@ def prediction_df_incomplete():
         {
             DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
             DataKeys.PRECURSOR_CHARGE: [1, 2],
-            DataKeys.PEPTIDE_MZ: [100, 200],
+            DataKeys.PRECURSOR_MZ: [100, 200],
         }
     )
 
@@ -79,7 +79,7 @@ def prediction_df_large():
         {
             DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE" + str(i) for i in range(2000)],
             DataKeys.PRECURSOR_CHARGE: [1 for _ in range(2000)],
-            DataKeys.PEPTIDE_MZ: [100 for _ in range(2000)],
+            DataKeys.PRECURSOR_MZ: [100 for _ in range(2000)],
             DataKeys.COLLISION_ENERGY: [30 for _ in range(2000)],
             DataKeys.FRAGMENTATION_TYPE: [FragmentationType.HCD for _ in range(2000)],
         }
@@ -92,7 +92,7 @@ def prediction_df_ptms():
         {
             DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTI[DE2", "PEPTI(DE3"],
             DataKeys.PRECURSOR_CHARGE: [1, 2, 3],
-            DataKeys.PEPTIDE_MZ: [100, 200, 300],
+            DataKeys.PRECURSOR_MZ: [100, 200, 300],
             DataKeys.COLLISION_ENERGY: [30, 30, 30],
             DataKeys.FRAGMENTATION_TYPE: [
                 FragmentationType.HCD,
@@ -109,7 +109,7 @@ def prediction_df_high_charge():
         {
             DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2", "PEPTIDE3"],
             DataKeys.PRECURSOR_CHARGE: [1, 5, 6],
-            DataKeys.PEPTIDE_MZ: [100, 200, 300],
+            DataKeys.PRECURSOR_MZ: [100, 200, 300],
             DataKeys.COLLISION_ENERGY: [30, 30, 30],
             DataKeys.FRAGMENTATION_TYPE: [
                 FragmentationType.HCD,
@@ -169,63 +169,6 @@ def expected_tsv_header():
     return "\t".join(CSV_COLUMNS)
 
 
-# @pytest.mark.parametrize("model_name", [
-#     AVAILABLE_MODELS.PrositIntensityHCD,
-#     AVAILABLE_MODELS.PrositIntensityCID,
-#     AVAILABLE_MODELS.PrositIntensityTimsTOF,
-# ])
-# @pytest.mark.parametrize("output_format", [
-#     AVAILABLE_FORMATS.CSV_TSV,
-#     AVAILABLE_FORMATS.MSP,
-#     AVAILABLE_FORMATS.MGF,
-# ])
-# @pytest.mark.parametrize("csv_separator", [",", ";", "\t"])
-# @pytest.mark.parametrize("fragmentation_type", [FRAGMENTATION_TYPE.HCD, FRAGMENTATION_TYPE.CID])
-# def test_spectrum_prediction(spectrum_prediction_run, model_name, output_format, csv_separator, fragmentation_type):
-#     run = spectrum_prediction_run
-#
-#     # Set up the parameters
-#     params = {
-#         "model_name": model_name,
-#         "output_format": output_format,
-#         "normalized_collision_energy": 30,
-#         "fragmentation_type": fragmentation_type,
-#         "csv_seperator": csv_separator,
-#     }
-#
-#     # Adjust parameters based on model requirements
-#     model_info = MODEL_METADATA[model_name]
-#     required_keys = model_info["required_keys"]
-#
-#     # Run the step calculation
-#     run.step_calculate(params)
-#
-#     # Assert outputs
-#     assert "predicted_spectra_metadata" in run.current_outputs
-#     assert "predicted_spectra_peaks" in run.current_outputs
-#
-#     # Check if the output file is generated
-#     if output_format == AVAILABLE_FORMATS.CSV_TSV:
-#         assert "predicted_spectra" in run.current_outputs
-#         file_output = run.current_outputs["predicted_spectra"]
-#         assert file_output.file_extension in ["csv", "tsv"]
-#         if csv_separator == "\t":
-#             assert file_output.file_extension == "tsv"
-#         else:
-#             assert file_output.file_extension == "csv"
-#     elif output_format == AVAILABLE_FORMATS.MSP:
-#         assert "predicted_spectra" in run.current_outputs
-#         assert run.current_outputs["predicted_spectra"].file_extension == "msp"
-#     elif output_format == AVAILABLE_FORMATS.MGF:
-#         assert "predicted_spectra" in run.current_outputs
-#         assert run.current_outputs["predicted_spectra"].file_extension == "mgf"
-#
-#     # Additional assertions can be added here to check the content of the output files or dataframes
-#
-#     # Check if any error messages were generated
-#     assert not any(msg["level"] == "ERROR" for msg in run.current_messages)
-
-
 @pytest.mark.parametrize(
     "model_name",
     [
@@ -259,9 +202,10 @@ def test_spectrum_prediction(
     params = {
         "model_name": model_name,
         "output_format": output_format,
-        "normalized_collision_energy": 30,
+        "collision_energy": 30,
         "fragmentation_type": fragmentation_type,
-        "csv_seperator": csv_separator,
+        "column_seperator": csv_separator,
+        "file_name": "predicted_spectra",
     }
 
     # Adjust parameters based on model requirements
@@ -282,7 +226,7 @@ def test_spectrum_prediction(
     assert not metadata_df.empty
     for key in required_keys:
         assert key in metadata_df.columns
-    assert DataKeys.PEPTIDE_MZ in metadata_df.columns
+    assert DataKeys.PRECURSOR_MZ in metadata_df.columns
 
     # Check peaks DataFrame
     assert not peaks_df.empty
@@ -339,10 +283,7 @@ def test_spectrum_prediction(
 
     # Check if the collision energy is correctly applied (if applicable)
     if DataKeys.COLLISION_ENERGY in metadata_df.columns:
-        assert all(
-            metadata_df[DataKeys.COLLISION_ENERGY]
-            == params["normalized_collision_energy"]
-        )
+        assert all(metadata_df[DataKeys.COLLISION_ENERGY] == params["collision_energy"])
 
     # Check if the peaks are valid
     assert all(peaks_df[DataKeys.MZ] > 0)
@@ -351,8 +292,7 @@ def test_spectrum_prediction(
     )
 
     # Check if fragment types are valid
-    # TODO account for more fragment types
-    valid_fragment_types = set(["b", "y"])  # Add more if needed
+    valid_fragment_types = set(["a", "b", "c", "x", "y", "z"])  # Add more if needed
 
     assert set(peaks_df[OutputKeys.FRAGMENT_TYPE].str[0]).issubset(valid_fragment_types)
 
@@ -373,7 +313,7 @@ def test_preprocess_renames_columns_correctly(prediction_df_complete):
     model.prediction_df = prediction_df_complete
     model.preprocess()
     assert set(model.prediction_df.columns) == set(
-        model.required_keys + [DataKeys.PEPTIDE_MZ]
+        model.required_keys + [DataKeys.PRECURSOR_MZ]
     )
 
 
@@ -497,7 +437,7 @@ def test_load_prediction_df():
     )
     df = pd.DataFrame(
         {
-            DataKeys.PEPTIDE_MZ: [100, 200],
+            DataKeys.PRECURSOR_MZ: [100, 200],
             DataKeys.PEPTIDE_SEQUENCE: ["PEPTIDE1", "PEPTIDE2"],
             DataKeys.PRECURSOR_CHARGE: [1, 2],
         }

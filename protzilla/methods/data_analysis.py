@@ -2,27 +2,37 @@ import logging
 
 from protzilla.data_analysis.classification import random_forest, svm
 from protzilla.data_analysis.clustering import (
-    expectation_maximisation, hierarchical_agglomerative_clustering, k_means)
+    expectation_maximisation,
+    hierarchical_agglomerative_clustering,
+    k_means,
+)
 from protzilla.data_analysis.differential_expression_anova import anova
-from protzilla.data_analysis.differential_expression_linear_model import \
-    linear_model
+from protzilla.data_analysis.differential_expression_linear_model import linear_model
 from protzilla.data_analysis.differential_expression_mann_whitney import (
-    mann_whitney_test_on_columns, mann_whitney_test_on_intensity_data)
+    mann_whitney_test_on_columns,
+    mann_whitney_test_on_intensity_data,
+)
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
-from protzilla.data_analysis.model_evaluation import \
-    evaluate_classification_model
-from protzilla.data_analysis.plots import (clustergram_plot,
-                                           create_volcano_plot,
-                                           prot_quant_plot, scatter_plot)
+from protzilla.data_analysis.model_evaluation import evaluate_classification_model
+from protzilla.data_analysis.plots import (
+    clustergram_plot,
+    create_volcano_plot,
+    prot_quant_plot,
+    scatter_plot,
+)
 from protzilla.data_analysis.predict_spectra import (
-    compare_experimental_with_predicted_spectra, plot_mirror_spectrum,
-    plot_spectrum, predict)
-from protzilla.data_analysis.protein_graphs import (peptides_to_isoform,
-                                                    variation_graph)
-from protzilla.data_analysis.ptm_analysis import (filter_peptides_of_protein,
-                                                  ptms_per_protein_and_sample,
-                                                  ptms_per_sample)
+    compare_experimental_with_predicted_spectra,
+    plot_mirror_spectrum,
+    plot_spectrum,
+    predict,
+)
+from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
+from protzilla.data_analysis.ptm_analysis import (
+    filter_peptides_of_protein,
+    ptms_per_protein_and_sample,
+    ptms_per_sample,
+)
 from protzilla.data_analysis.ptm_quantification import flexiquant_lf
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
@@ -765,10 +775,6 @@ class SelectPeptidesForProtein(DataAnalysisStep):
                     f"from {inputs['protein_list']}",
                 }
             )
-                    "msg": f"Selected the most significant Protein: {most_significant_protein['Protein ID']}, "
-                    f"from {inputs['protein_list']}",
-                }
-            )
 
         return inputs
 
@@ -782,10 +788,11 @@ class PredictSpectra(DataAnalysisStep):
         "peptide_df",
         "model_name",
         "output_format",
-        "normalized_collision_energy",
+        "collision_energy",
         "fragmentation_type",
         "column_seperator",
         "output_dir",
+        "file_name",
     ]
     output_keys = [
         "predicted_spectra",
@@ -894,6 +901,10 @@ class PlotMirrorSpectrum(PlotStep):
 
 
 class CompareExperimentalWithPredictedSpectra(PlotStep):
+    """This step requires you to replace the Output of the EvidenceImport with a csv file containing the experimental spectra.
+    The spectrum prediction should predict these spectra, such that they can be compared to one another
+    """
+
     display_name = "Compare Experimental With Predicted Spectra"
     operation = "plot"
     method_description = "Plot the predicted spectrum of a peptide"

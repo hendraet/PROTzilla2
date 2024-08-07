@@ -1045,8 +1045,8 @@ class PredictSpectraForm(MethodForm):
         choices=fill_helper.to_choices(spu.OutputFormats),
         label="The format of the output file",
     )
-    normalized_collision_energy = CustomNumberField(
-        label="Normalized collision energy",
+    collision_energy = CustomNumberField(
+        label="Collision energy",
         min_value=1,
         max_value=1000,
         step_size=1,
@@ -1060,11 +1060,15 @@ class PredictSpectraForm(MethodForm):
         label="Output file column seperator",
         choices=fill_helper.to_choices(spu.GenericTextSeparator),
     )
+    file_name = CustomCharField(
+        label="Output file name (please choose a descriptive name)",
+        initial="predicted_spectra",
+    )
 
     def fill_form(self, run: Run) -> None:
         current_model = self.get_field("model_name")
         current_output_format = self.get_field("output_format")
-        show_nce = current_model != spu.PredictionModels.PROSITINTENSITYCID
+        show_collision_energy = current_model != spu.PredictionModels.PROSITINTENSITYCID
         show_fragmentation_type = (
             current_model == spu.PredictionModels.PROSITINTENSITYTMT
         )
@@ -1072,7 +1076,7 @@ class PredictSpectraForm(MethodForm):
         self.fields["model_info"].update_text(
             spu.formatted_citation_dict[current_model]
         )
-        self.toggle_visibility("normalized_collision_energy", show_nce)
+        self.toggle_visibility("collision_energy", show_collision_energy)
         self.toggle_visibility("fragmentation_type", show_fragmentation_type)
         self.toggle_visibility("column_seperator", show_column_seperator)
 
@@ -1260,99 +1264,11 @@ class PlotMirrorSpectrumForm(MethodForm):
                     )
 
 
-# class PlotMirrorSpectrumForm(MethodForm):
-#     import pandas as pd
-#     is_dynamic = True
-#     import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils as spu
-#
-#     prediction_df_step_instance = CustomChoiceField(
-#         choices=[],
-#         label="Choose the prediction dataframe",
-#     )
-#
-#     peptide = CustomChoiceField(
-#         choices=[],
-#         label="Choose the peptide to plot",
-#     )
-#     charge = CustomChoiceField(
-#         choices=[],
-#         label="Choose the charge of the peptide",
-#     )
-#     experiment_peptide_sequence = CustomChoiceField(
-#         choices=[],
-#         label="Choose the peptide sequence of the experiment",
-#     )
-#
-#     experiment_name = CustomChoiceField(
-#         choices=[],
-#         label="Choose the experiment name",
-#     )
-#     experiment_spectrum_name = CustomChoiceField(
-#         choices=[],
-#         label="Choose the spectrum of the experiment",
-#     )
-#
-#     experiment_peptide_charge = CustomChoiceField(
-#         choices=[],
-#         label="Choose the charge of the peptide",
-#     )
-#
-#
-#     annotation_threshold = CustomFloatField(
-#         label="Annotation threshold (peaks with intensity below this value will not be annotated)",
-#         min_value=0.0,
-#         max_value=1,
-#         step_size=0.01,
-#         initial=0.2,
-#     )
-#
-#     def fill_form(self, run: Run) -> None:
-#         self.fields["prediction_df_step_instance"].choices = fill_helper.get_choices(
-#             run, spu.OutputsPredictFunction.PREDICTED_SPECTRA, Step
-#         )
-#         prediction_df_instance = self.data.get(
-#             "input_df", self.fields["prediction_df_step_instance"].choices[0][0]
-#         )
-#         if prediction_df_instance is None:
-#             raise ValueError("No prediction dataframe found")
-#
-#         prediction_df = run.steps.get_step_output(
-#             Step,
-#             spu.OutputsPredictFunction.PREDICTED_SPECTRA_METADATA,
-#             prediction_df_instance,
-#         )
-#
-#         self.fields["peptide"].choices = fill_helper.to_choices(
-#             sorted(prediction_df[spu.DataKeys.PEPTIDE_SEQUENCE].unique())
-#         )
-#
-#         peptide_sequence = self.data.get(
-#             "peptide", self.fields["peptide"].choices[0][0]
-#         )
-#
-#         if peptide_sequence is None:
-#             raise ValueError("No peptide found")
-#
-#         self.fields["charge"].choices = fill_helper.to_choices(
-#             prediction_df[
-#                 prediction_df[spu.DataKeys.PEPTIDE_SEQUENCE] == peptide_sequence
-#                 ][spu.DataKeys.PRECURSOR_CHARGE].unique()
-#         )
-#
-#         extracted_spectrum_df = run.steps.get_step_output(
-#             Step,
-#             "peptide_df"
-#         )
-#
-#         self.fields["experiment_peptide_sequence"].choices = fill_helper.to_choices(
-#             sorted(extracted_spectrum_df[spu.DataKeys.PEPTIDE_SEQUENCE].unique()))
-#         self.fields["experiment_name"].choices = fill_helper.to_choices(
-#             extracted_spectrum_df[extracted_spectrum_df[spu.DataKeys.PEPTIDE_SEQUENCE] == self.get_field("experiment_peptide_sequence")]["experiment"].unique())
-#         self.fields["experiment_peptide_charge"].choices = fill_helper.to_choices(
-#             extracted_spectrum_df[extracted_spectrum_df[spu.DataKeys.PEPTIDE_SEQUENCE] == self.get_field("experiment_peptide_sequence")][spu.DataKeys.PRECURSOR_CHARGE].unique())
-
-
 class CompareExperimentalWithPredictedSpectraForm(MethodForm):
+    """
+    This does not have any parameters. In methods/data_analysis.py, the
+    """
+
     import protzilla.data_analysis.spectrum_prediction.spectrum_prediction_utils as spu
 
 

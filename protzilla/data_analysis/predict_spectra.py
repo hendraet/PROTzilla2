@@ -25,37 +25,39 @@ def predict(
     model_name: PredictionModels,
     peptide_df: pd.DataFrame,
     output_format: OutputFormats,
-    normalized_collision_energy: Optional[float],
+    collision_energy: Optional[float],
     fragmentation_type: Optional[FragmentationType],
     column_seperator: Optional[GenericTextSeparator],
     output_dir: Optional[str] = None,
+    file_name: Optional[str] = "predicted_spectra",
 ):
     """
     Predicts the spectra for the given peptides using the specified model.
     :param model_name: the model to use
     :param peptide_df: the result of the evidence import, containing the peptide sequences, charges and m/z values
     :param output_format: output format of the spectral predictions
-    :param normalized_collision_energy: the normalized collision energy for which to predict the spectra
+    :param collision_energy: the collision energy for which to predict the spectra
     :param fragmentation_type: the type of ms fragmentation for which to predict the spectra
     :param column_seperator: the column separator to use in case the output format is generic text
     :param output_dir: the directory to save the output to, this will just be shown to the user in the return message so he knows where to find the output
     :return: a dictionary containing the output file, metadata and peaks dataframes of the predicted spectra and a message
     """
-    # First order of business: rename the columns to the expected names
+    if file_name is None or file_name == "":
+        raise ValueError("The file name must not be empty.")
     peptide_df = peptide_df.rename(
         columns={
             "Sequence": DataKeys.PEPTIDE_SEQUENCE,
             "Charge": DataKeys.PRECURSOR_CHARGE,
-            "m/z": DataKeys.PEPTIDE_MZ,
+            "m/z": DataKeys.PRECURSOR_MZ,
         },
-        errors="ignore",
+        errors="ignore",  # as the evidence import already renames some columns to the DataKeys, this is necessary
     )
     prediction_df = (
         peptide_df[
             [
                 DataKeys.PEPTIDE_SEQUENCE,
                 DataKeys.PRECURSOR_CHARGE,
-                DataKeys.PEPTIDE_MZ,
+                DataKeys.PRECURSOR_MZ,
             ]
         ]
         .drop_duplicates()
@@ -63,22 +65,21 @@ def predict(
     )
     predictor = SpectrumPredictorFactory.create_predictor(model_name)
     if DataKeys.COLLISION_ENERGY in predictor.required_keys:
-        assert normalized_collision_energy is not None, "Collision energy is required."
-        prediction_df[DataKeys.COLLISION_ENERGY] = normalized_collision_energy
+        assert collision_energy is not None, "Collision energy is required."
+        prediction_df[DataKeys.COLLISION_ENERGY] = collision_energy
     if DataKeys.FRAGMENTATION_TYPE in predictor.required_keys:
         assert fragmentation_type is not None, "Fragmentation type is required."
         prediction_df[DataKeys.FRAGMENTATION_TYPE] = fragmentation_type
     predictor.load_prediction_df(prediction_df)
     predicted_spectra = predictor.predict()
-    base_name = "predicted_spectra"
     if output_format == OutputFormats.CSV_TSV:
         output = SpectrumExporter.export_to_generic_text(
-            predicted_spectra, base_name, column_seperator
+            predicted_spectra, file_name, column_seperator
         )
     elif output_format == OutputFormats.MSP:
-        output = SpectrumExporter.export_to_msp(predicted_spectra, base_name)
+        output = SpectrumExporter.export_to_msp(predicted_spectra, file_name)
     elif output_format == OutputFormats.MGF:
-        output = SpectrumExporter.export_to_mgf(predicted_spectra, base_name)
+        output = SpectrumExporter.export_to_mgf(predicted_spectra, file_name)
 
     metadata_dfs = []
     peaks_dfs = []
@@ -480,50 +481,69 @@ def compare_experimental_with_predicted_spectra(
 
     result_df = pd.DataFrame(results)
 
-    # Plot the distributions of the similarities in a histogram
+    violin_plot_args = dict(
+        meanline_visible=True,
+        box_visible=True,
+        scalemode="width",
+        width=0.5,
+        spanmode="manual",
+        span=[-1, 1],
+    )
+    no_modifications_name = "Experimental spectra without modifications"
+    with_modifications_name = "Experimental spectra with modifications"
     fig = go.Figure()
+
+    # Violin plot for spectra with modifications (left side)
     fig.add_trace(
-        go.Histogram(
-            x=result_df[result_df["modifications"] == ""]["similarity"],
-            name="Without modifications",
-            histnorm="probability",
-            nbinsx=30,
-            opacity=0.7,
+        go.Violin(
+            x=["Comparison"] * len(result_df[result_df["modifications"] != ""]),
+            y=result_df[result_df["modifications"] != ""]["similarity"],
+            legendgroup=with_modifications_name,
+            scalegroup=with_modifications_name,
+            name=with_modifications_name,
+            side="negative",
+            line_color="red",
+            **violin_plot_args,
         )
-    )
-    fig.add_trace(
-        go.Histogram(
-            x=result_df[result_df["modifications"] != ""]["similarity"],
-            name="With modifications",
-            histnorm="probability",
-            nbinsx=30,
-            opacity=0.7,
-        )
-    )
-    # add information about the mean and median of the similarities for both groups
-    fig.add_annotation(
-        x=0.5,
-        y=0.9,
-        xref="paper",
-        yref="paper",
-        text=f"Mean similarity without modifications: {result_df[result_df['modifications'] == '']['similarity'].mean():.2f}",
-        showarrow=False,
-    )
-    fig.add_annotation(
-        x=0.5,
-        y=0.85,
-        xref="paper",
-        yref="paper",
-        text=f"Mean similarity with modifications: {result_df[result_df['modifications'] != '']['similarity'].mean():.2f}",
-        showarrow=False,
     )
 
-    fig.update_layout(
-        title="Distribution of Similarities",
-        xaxis_title="Adapted Cosine Similarity",
-        yaxis_title="Probability",
-        barmode="overlay",
+    # Violin plot for spectra without modifications (right side)
+    fig.add_trace(
+        go.Violin(
+            x=["Comparison"] * len(result_df[result_df["modifications"] == ""]),
+            y=result_df[result_df["modifications"] == ""]["similarity"],
+            legendgroup=no_modifications_name,
+            scalegroup=no_modifications_name,
+            name=no_modifications_name,
+            side="positive",
+            line_color="blue",
+            **violin_plot_args,
+        )
     )
+
+    # Update layout
+    fig.update_layout(
+        title="Distribution of similarities between experimental and predicted spectra",
+        xaxis_title="",
+        yaxis_title="Adapted Cosine Similarity",
+        violinmode="overlay",
+        violingap=0,
+        width=900,  # Set the width of the plot
+        height=600,  # Set the height of the plot
+        yaxis=dict(
+            gridcolor="rgba(0,0,0,0.1)",
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor="black",
+            zerolinewidth=1,
+            range=[-1.1, 1.1],
+        ),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+
+    # Remove x-axis ticks and labels
+    fig.update_xaxes(showticklabels=False, ticks="")
 
     return {
         "plots": [fig],
