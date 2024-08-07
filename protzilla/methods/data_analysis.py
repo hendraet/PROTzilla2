@@ -2,37 +2,28 @@ import logging
 
 from protzilla.data_analysis.classification import random_forest, svm
 from protzilla.data_analysis.clustering import (
-    expectation_maximisation,
-    hierarchical_agglomerative_clustering,
-    k_means,
-)
+    expectation_maximisation, hierarchical_agglomerative_clustering, k_means)
 from protzilla.data_analysis.differential_expression_anova import anova
-from protzilla.data_analysis.differential_expression_linear_model import linear_model
+from protzilla.data_analysis.differential_expression_linear_model import \
+    linear_model
 from protzilla.data_analysis.differential_expression_mann_whitney import (
-    mann_whitney_test_on_columns,
-    mann_whitney_test_on_intensity_data,
-)
+    mann_whitney_test_on_columns, mann_whitney_test_on_intensity_data)
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
-from protzilla.data_analysis.model_evaluation import evaluate_classification_model
-from protzilla.data_analysis.plots import (
-    clustergram_plot,
-    create_volcano_plot,
-    prot_quant_plot,
-    scatter_plot,
-)
+from protzilla.data_analysis.model_evaluation import \
+    evaluate_classification_model
+from protzilla.data_analysis.plots import (clustergram_plot,
+                                           create_volcano_plot,
+                                           prot_quant_plot, scatter_plot)
 from protzilla.data_analysis.predict_spectra import (
-    compare_experimental_with_predicted_spectra,
-    plot_mirror_spectrum,
-    plot_spectrum,
-    predict,
-)
-from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
-from protzilla.data_analysis.ptm_analysis import (
-    filter_peptides_of_protein,
-    ptms_per_protein_and_sample,
-    ptms_per_sample,
-)
+    compare_experimental_with_predicted_spectra, plot_mirror_spectrum,
+    plot_spectrum, predict)
+from protzilla.data_analysis.protein_graphs import (peptides_to_isoform,
+                                                    variation_graph)
+from protzilla.data_analysis.ptm_analysis import (filter_peptides_of_protein,
+                                                  ptms_per_protein_and_sample,
+                                                  ptms_per_sample)
+from protzilla.data_analysis.ptm_quantification import flexiquant_lf
 from protzilla.methods.data_preprocessing import TransformationLog
 from protzilla.steps import Plots, Step, StepManager
 
@@ -701,6 +692,38 @@ class ProteinGraphVariationGraph(DataAnalysisStep):
         return inputs
 
 
+class FLEXIQuantLF(PlotStep):
+    display_name = "FLEXIQuant-LF"
+    operation = "modification_quantification"
+    method_description = "FLEXIQuant-LF is an unbiased, label-free computational tool to indirectly detect modified peptides and to quantify the degree of modification based solely on the unmodified peptide species."
+
+    input_keys = [
+        "peptide_df",
+        "metadata_df",
+        "reference_group",
+        "protein_id",
+        "num_init",
+        "mod_cutoff",
+        "grouping_column",
+    ]
+    output_keys = [
+        "raw_scores",
+        "RM_scores",
+        "diff_modified",
+        "removed_peptides",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return flexiquant_lf(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["peptide_df"] = steps.get_step_output(
+            Step, "peptide_df", inputs["peptide_df"]
+        )
+
+        inputs["metadata_df"] = steps.metadata_df
+
+
 class SelectPeptidesForProtein(DataAnalysisStep):
     display_name = "Filter Peptides of Protein"
     operation = "Peptide analysis"
@@ -722,6 +745,8 @@ class SelectPeptidesForProtein(DataAnalysisStep):
             Step, "peptide_df", inputs["peptide_df"]
         )
 
+        inputs["metadata_df"] = steps.metadata_df
+
         if inputs["auto_select"]:
             significant_proteins = steps.get_step_output(
                 DataAnalysisStep, "significant_proteins_df", inputs["protein_list"]
@@ -736,6 +761,10 @@ class SelectPeptidesForProtein(DataAnalysisStep):
             self.messages.append(
                 {
                     "level": logging.INFO,
+                    "msg": f"Selected the most significant Protein: {most_significant_protein['Protein ID']}, "
+                    f"from {inputs['protein_list']}",
+                }
+            )
                     "msg": f"Selected the most significant Protein: {most_significant_protein['Protein ID']}, "
                     f"from {inputs['protein_list']}",
                 }
