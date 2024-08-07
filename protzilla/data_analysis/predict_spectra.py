@@ -111,6 +111,16 @@ def plot_spectrum(
     charge: int,
     annotation_threshold: float,
 ):
+    """
+    Plots the spectrum for the given peptide and charge.
+    The metadata and peaks dataframes can be joined via the index, a unique identifier for each spectrum.
+    :param metadata_df: the dataframe containing the metadata of the spectra, like sequence, charge, etc.
+    :param peaks_df: the dataframe containing the peaks of the spectra
+    :param peptide: the peptide sequence for which to plot the spectrum
+    :param charge: the charge of the precursor ion for which to plot the spectrum
+    :param annotation_threshold: the threshold for the intensity of the peaks to be annotated
+    :return: a dictionary containing the plot and a message
+    """
     assert 0 <= annotation_threshold and annotation_threshold <= 1
 
     # Get the unique_id for the specified peptide and charge
@@ -195,7 +205,7 @@ def plot_spectrum(
             textangle=-90,
         )
 
-    # Updating the color legend to say "y" and "b" instead of the color codes
+    # Updating the color legend to say e.g. "y" and "b" instead of the color codes
     fig.for_each_trace(
         lambda trace: trace.update(
             name=trace.name.replace(ion_color[0], f"{ion_types[0]}-ion").replace(
