@@ -150,6 +150,10 @@ class TimeSeriesGrouping(Enum):
     with_grouping = "With Grouping"
     without_grouping = "Without Grouping"
 
+class TimeSeriesRANSACLoss(Enum):
+    absolute_error = "absolute_error"
+    squared_error = "squared_error"
+
 
 class DifferentialExpressionANOVAForm(MethodForm):
     is_dynamic = True
@@ -1234,7 +1238,7 @@ class TimeSeriesLinearRegressionForm(MethodForm):
         min_value=0,
         max_value=1,
         step_size=0.1,
-        initial=0.2
+        initial=0.8
     )
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,
@@ -1270,12 +1274,30 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
         choices=[],
         label="Protein group: which protein group to perform the RANSAC regression on",
     )
+    max_trials = CustomNumberField(
+        label="Max trials: the maximum number of iterations for random sample selection",
+        min_value=1,
+        step_size=1,
+        initial=100,
+    )
+    stop_probability = CustomFloatField(
+        label="Stop Probability: the probability that the algorithm stops after a certain number of iterations if at least one outlier-free set of the training data is sampled",
+        min_value=0,
+        max_value=1,
+        step_size=0.01,
+        initial=0.99
+    )
+    loss = CustomChoiceField(
+        choices= TimeSeriesRANSACLoss,
+        label="Loss function: the loss function to be used for fitting the linear model",
+        initial=TimeSeriesRANSACLoss.absolute_error,
+    )
     train_size = CustomFloatField(
         label="Train size: proportion of the dataset to include in the test split",
         min_value=0,
         max_value=1,
         step_size=0.1,
-        initial=0.2
+        initial=0.8
     )
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,
@@ -1381,12 +1403,6 @@ class TimeSeriesAutoARIMAForm(MethodForm):
         max_value=1,
         step_size=0.1,
         initial=0.8,
-    )
-    forecast_steps = CustomNumberField(
-        label="Number of steps to forecast",
-        min_value=1,
-        step_size=1,
-        initial=10
     )
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,

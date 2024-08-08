@@ -839,6 +839,9 @@ class TimeSeriesRANSACRegression(PlotStep):
         "input_df",
         "metadata_df",
         "protein_group",
+        "max_trials",
+        "stop_probability",
+        "loss",
         "train_size",
         "grouping",
     ]
@@ -895,7 +898,6 @@ class TimeSeriesAutoARIMA(PlotStep):
         "seasonal",
         "m",
         "train_size",
-        "forecast_steps",
         "grouping",
     ]
     output_keys = [

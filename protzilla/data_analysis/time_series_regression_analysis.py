@@ -56,6 +56,9 @@ def time_series_linear_regression(
 
     input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
     input_df = input_df.interpolate(method='linear', axis=0)
+
+    input_df = input_df.sample(frac=1, random_state = 42).reset_index(drop=True)
+
     X = input_df[["Time"]]
     y = input_df["Intensity"]
 
@@ -114,7 +117,7 @@ def time_series_linear_regression(
             })
 
     else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_size, shuffle=False)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=train_size, shuffle=False)
         model = LinearRegression()
         model.fit(X_train, y_train)
 
@@ -156,10 +159,9 @@ def time_series_linear_regression(
 
     # Add annotation text as a separate trace in the subplot
     annotation_text = "<br>".join([
-        f"Group: {res['group']}<br>Train RMSE: {res['train_root_mean_squared']:.3f}<br>"
-        f"Test RMSE: {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f}<br>"
-        f"Test R²: {res['test_r2_score']:.3f}"
+        f"Group: {res['group']} (Train/Test)"
+        f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
+        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
@@ -188,7 +190,7 @@ def time_series_linear_regression(
             yanchor="top",
             y=0.95,
             xanchor="right",
-            x=0.825
+            x=0.8
         )
     )
 
@@ -208,6 +210,9 @@ def time_series_ransac_regression(
         input_df: pd.DataFrame,
         metadata_df: pd.DataFrame,
         protein_group: str,
+        max_trials: int,
+        stop_probability: float,
+        loss: str,
         train_size: float,
         grouping: str,
 ):
@@ -236,6 +241,9 @@ def time_series_ransac_regression(
 
     input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
     input_df = input_df.interpolate(method='linear', axis=0)
+
+    input_df = input_df.sample(frac=1, random_state = 42).reset_index(drop=True)
+
     X = input_df[["Time"]]
     y = input_df["Intensity"]
 
@@ -250,8 +258,8 @@ def time_series_ransac_regression(
             X_group = group_df[["Time"]]
             y_group = group_df["Intensity"]
 
-            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, test_size=train_size, shuffle=False)
-            model = RANSACRegressor(base_estimator=LinearRegression())
+            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, train_size=train_size, shuffle=False)
+            model = RANSACRegressor(max_trials = max_trials, stop_probability = stop_probability, loss = loss, base_estimator=LinearRegression())
             model.fit(X_train, y_train)
 
             inlier_mask = model.inlier_mask_
@@ -361,10 +369,9 @@ def time_series_ransac_regression(
 
     # Add annotation text as a separate trace in the subplot
     annotation_text = "<br>".join([
-        f"Group: {res['group']}<br>Train RMSE: {res['train_root_mean_squared']:.3f}<br>"
-        f"Test RMSE: {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f}<br>"
-        f"Test R²: {res['test_r2_score']:.3f}"
+        f"Group: {res['group']} (Train/Test)"
+        f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
+        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
@@ -393,7 +400,7 @@ def time_series_ransac_regression(
             yanchor="top",
             y=0.95,
             xanchor="right",
-            x=0.825
+            x=0.8
         )
     )
 
@@ -485,7 +492,6 @@ def time_series_auto_arima(
     seasonal: str,
     m: int,
     train_size: float,
-    forecast_steps: int,
     grouping: str,
 ) -> dict:
     """
@@ -511,6 +517,7 @@ def time_series_auto_arima(
         seasonal = False
 
     input_df = input_df[input_df['Protein ID'] == protein_group]
+    input_df = input_df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     input_df = pd.merge(
         left=input_df,
@@ -519,92 +526,150 @@ def time_series_auto_arima(
         copy=False,
     )
 
-    input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
-    input_df.set_index("Time", inplace=True)
-    input_df = input_df.interpolate(method='linear', axis=0)
-
-    data = input_df["Intensity"]
-
-    train_size = int(len(data) * train_size)
-    train, test = data[:train_size], data[train_size:]
-
-    # Fit the ARIMA model
-    model = auto_arima(
-        train,
-        seasonal=seasonal,
-        m=m,
-        trace=True,
-        error_action='ignore',
-        suppress_warnings=True,
-        stepwise=True,
-    )
-
-    # Forecast the test set
-    forecast = model.predict(n_periods=forecast_steps)
-
-    last_time = data.index[-1] +1
-    forecast_index = np.arange(last_time, last_time + forecast_steps)
-    forecast_series = pd.Series(forecast, index=forecast_index)
-
-    test_for_comparison = test[:forecast_steps]
-    forecast_for_comparison = forecast_series[: len(test_for_comparison)]
-
-
-
-    test_rmse = np.sqrt(mean_squared_error(test_for_comparison, forecast_for_comparison))
-    test_r2 = r2_score(test_for_comparison, forecast_for_comparison)
-    train_rmse = np.sqrt(mean_squared_error(train, model.predict_in_sample()))
-    train_r2 = r2_score(train, model.predict_in_sample())
-
     fig = make_subplots(rows=1, cols=2, column_widths=[0.7, 0.3])
-
     scores = []
 
-    plot_df = pd.DataFrame({
-        'Time': test.index[:forecast_steps],
-        'Intensity': test[:forecast_steps],
-        'Predicted': forecast_series,
-        'Inlier': np.abs(test[:forecast_steps] - forecast_series) < (1.5 * np.std(test[:forecast_steps]))
-    })
+    if grouping == "With Grouping" and "Group" in input_df.columns:
+        groups = input_df["Group"].unique()
+        for group in groups:
+            group_df = input_df[input_df["Group"] == group]
 
-    fig.add_trace(go.Scatter(
-        x=plot_df['Time'],
-        y=plot_df['Intensity'],
-        mode='markers',
-        name='Actual Intensity',
-        marker=dict(color='blue')
-    ), row=1, col=1)
+            group_df["Time"] = group_df["Time"].apply(convert_time_to_hours)
+            group_df = group_df.interpolate(method='linear', axis=0)
 
-    fig.add_trace(go.Scatter(
-        x=plot_df['Time'],
-        y=plot_df['Predicted'],
-        mode='lines',
-        name='Predicted Intensity',
-        line=dict(color='red')
-    ), row=1, col=1)
+            train_df_size = int(len(group_df) * train_size)
+            train_df, test_df = group_df[:train_df_size], group_df[train_df_size:]
 
-    fig.add_trace(go.Scatter(
-        x=plot_df[plot_df['Inlier'] == False]['Time'],
-        y=plot_df[plot_df['Inlier'] == False]['Intensity'],
-        mode='markers',
-        name='Outliers',
-        marker=dict(color='green')
-    ), row=1, col=1)
+            train_df = train_df.set_index("Time")["Intensity"]
+            test_df = test_df.set_index("Time")["Intensity"]
 
-    scores.append({
-        'group': 'Overall',
-         'train_root_mean_squared': train_rmse,
-        'test_root_mean_squared': test_rmse,
-        'train_r2_score': train_r2,
-        'test_r2_score': test_r2,
-    })
+            # Fit the ARIMA model
+            model = auto_arima(
+                train_df,
+                seasonal=seasonal,
+                m=m,
+                trace=True,
+                error_action='ignore',
+                suppress_warnings=True,
+                stepwise=True,
+            )
+
+            # Forecast the test set
+            forecast = model.predict(n_periods=test_df.shape[0])
+
+            test_rmse = np.sqrt(mean_squared_error(test_df, forecast))
+            test_r2 = r2_score(test_df, forecast)
+            train_rmse = np.sqrt(mean_squared_error(train_df, model.predict_in_sample()))
+            train_r2 = r2_score(train_df, model.predict_in_sample())
+
+            forecast_reset = forecast.reset_index(drop=True)
+            forecast_plot = pd.Series(forecast_reset.values, index=test_df.index)
+            forecast_plot = forecast_plot.groupby(forecast_plot.index).mean()
+
+            fig.add_trace(go.Scatter(
+                x=test_df.index,
+                y=test_df,
+                mode='markers',
+                name='Actual Intensity',
+                marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index])
+            ), row=1, col=1)
+
+            fig.add_trace(go.Scatter(
+                x=test_df.index,
+                y=forecast,
+                mode='markers',
+                name='Predicted Intensity',
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index + 1])
+            ), row=1, col=1)
+
+            fig.add_trace(go.Scatter(
+                x = forecast_plot.index,
+                y = forecast_plot,
+                mode = 'lines',
+                name = 'Mean Predicted Intensity',
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index + 2])
+            ), row=1, col=1)
+
+            color_index += 3
+
+            scores.append({
+                'group': group,
+                 'train_root_mean_squared': train_rmse,
+                'test_root_mean_squared': test_rmse,
+                'train_r2_score': train_r2,
+                'test_r2_score': test_r2,
+            })
+
+    else:
+        input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
+        input_df = input_df.interpolate(method='linear', axis=0)
+
+        train_size = int(len(input_df) * train_size)
+        train_df, test_df = input_df[:train_size], input_df[train_size:]
+
+        train_df = train_df.set_index("Time")["Intensity"]
+        test_df = test_df.set_index("Time")["Intensity"]
+
+        # Fit the ARIMA model
+        model = auto_arima(
+            train_df,
+            seasonal=seasonal,
+            m=m,
+            trace=True,
+            error_action='ignore',
+            suppress_warnings=True,
+            stepwise=True,
+        )
+
+        # Forecast the test set
+        forecast = model.predict(n_periods=test_df.shape[0])
+
+        test_rmse = np.sqrt(mean_squared_error(test_df, forecast))
+        test_r2 = r2_score(test_df, forecast)
+        train_rmse = np.sqrt(mean_squared_error(train_df, model.predict_in_sample()))
+        train_r2 = r2_score(train_df, model.predict_in_sample())
+
+        forecast_reset = forecast.reset_index(drop=True)
+        forecast_plot = pd.Series(forecast_reset.values, index=test_df.index)
+        forecast_plot = forecast_plot.groupby(forecast_plot.index).mean()
+
+        fig.add_trace(go.Scatter(
+            x=test_df.index,
+            y=test_df,
+            mode='markers',
+            name='Actual Intensity',
+            marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[0])
+        ), row=1, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=test_df.index,
+            y=forecast,
+            mode='markers',
+            name='Predicted Intensity',
+            line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2])
+        ), row=1, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=forecast_plot.index,
+            y=forecast_plot,
+            mode='lines',
+            name='Mean Predicted Intensity',
+            line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[3])
+        ), row=1, col=1)
+
+        scores.append({
+            'group': 'Overall',
+            'train_root_mean_squared': train_rmse,
+            'test_root_mean_squared': test_rmse,
+            'train_r2_score': train_r2,
+            'test_r2_score': test_r2,
+        })
 
     # Add annotation text as a separate trace in the subplot
     annotation_text = "<br>".join([
-        f"Group: {res['group']}<br>Train RMSE: {res['train_root_mean_squared']:.3f}<br>"
-        f"Test RMSE: {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f}<br>"
-        f"Test R²: {res['test_r2_score']:.3f}"
+        f"Group: {res['group']} (Train/Test)"
+        f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
+        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
@@ -633,7 +698,7 @@ def time_series_auto_arima(
             yanchor="top",
             y=0.95,
             xanchor="right",
-            x=0.825
+            x=0.775
         )
     )
 
@@ -642,7 +707,6 @@ def time_series_auto_arima(
 
     fig.update_annotations(font_size=12)
 
-    fig.show()
 
     return dict(
         scores=scores,
