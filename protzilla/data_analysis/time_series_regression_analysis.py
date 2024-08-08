@@ -437,8 +437,6 @@ def adfuller_test(
         - messages: A list of messages for the user.
     """
 
-    # TODO: Info box for the user
-
     messages = []
     input_df = input_df[input_df['Protein ID'] == protein_group]
 
@@ -502,7 +500,7 @@ def time_series_auto_arima(
     :param seasonal: Whether the ARIMA model should be seasonal
     :param m: The number of time steps for a single seasonal period (ignored if seasonal=False)
     :param train_size: The proportion of the dataset to include in the test split
-    :param forecast_steps: The number of steps to forecast
+    :param grouping: Whether to group the data by the 'Group' column
 
     :return: A dictionary containing the root mean squared error and r2 score for the training and test sets
     """
@@ -579,7 +577,7 @@ def time_series_auto_arima(
                 y=forecast,
                 mode='markers',
                 name='Predicted Intensity',
-                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index + 1])
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index + 2])
             ), row=1, col=1)
 
             fig.add_trace(go.Scatter(
@@ -707,6 +705,226 @@ def time_series_auto_arima(
 
     fig.update_annotations(font_size=12)
 
+
+    return dict(
+        scores=scores,
+        plots=[fig],
+    )
+
+
+def time_series_arima(
+    input_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
+    protein_group: str,
+    seasonal: str,
+    p: int,
+    d: int,
+    q: int,
+    train_size: float,
+    grouping: str,
+) -> dict:
+
+    """
+    Perform ARIMA model selection on the time series data for a given protein group.
+    :param input_df: Peptide dataframe which contains the intensity of each sample
+    :param metadata_df: Metadata dataframe which contains the timestamps
+    :param protein_group: Protein group to perform the analysis on
+    :param seasonal: Whether the ARIMA model should be seasonal
+    :param p: ARIMA p parameter
+    :param d: ARIMA d parameter
+    :param q: ARIMA q parameter
+    :param train_size: The proportion of the dataset to include in the test split
+    :param grouping: Whether to group the data by the 'Group' column
+
+    :return: A dictionary containing the root mean squared error and r2 score for the training and test sets
+    """
+
+    color_index = 0
+
+    if train_size < 0 or train_size > 1:
+        raise ValueError("Train size should be between 0 and 1")
+
+    input_df = input_df[input_df['Protein ID'] == protein_group]
+    input_df = input_df.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    input_df = pd.merge(left=input_df, right=metadata_df, on="Sample", copy=False)
+
+    fig = make_subplots(rows=1, cols=2, column_widths=[0.7, 0.3])
+    scores = []
+
+    if grouping == "With Grouping" and "Group" in input_df.columns:
+        groups = input_df["Group"].unique()
+        for group in groups:
+            group_df = input_df[input_df["Group"] == group]
+
+            group_df["Time"] = group_df["Time"].apply(convert_time_to_hours)
+            group_df = group_df.interpolate(method='linear', axis=0)
+
+            train_df_size = int(len(group_df) * train_size)
+            train_df, test_df = group_df[:train_df_size], group_df[train_df_size:]
+
+            train_df = train_df.set_index("Time")["Intensity"]
+            test_df = test_df.set_index("Time")["Intensity"]
+
+            if seasonal == "Yes":
+                model = ARIMA(
+                    train_df,
+                    order=(p, d, q),
+                    #seasonal_order=(P, D, Q, m)
+                )
+            else:
+                model = ARIMA(
+                    train_df,
+                    order=(p, d, q)
+                )
+
+            model_fit = model.fit()
+
+            forecast = model_fit.forecast(steps=len(test_df))
+
+            test_rmse = np.sqrt(mean_squared_error(test_df, forecast))
+            test_r2 = r2_score(test_df, forecast)
+            train_rmse = np.sqrt(mean_squared_error(train_df, model_fit.fittedvalues))
+            train_r2 = r2_score(train_df, model_fit.fittedvalues)
+
+            forecast_reset = forecast.reset_index(drop=True)
+            forecast_plot = pd.Series(forecast_reset.values, index=test_df.index)
+            forecast_mean_plot = forecast_plot.groupby(forecast_plot.index).mean()
+
+            fig.add_trace(go.Scatter(
+                x=test_df.index,
+                y=test_df,
+                mode='markers',
+                name='Actual Intensity',
+                marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index])
+            ), row=1, col=1)
+
+            fig.add_trace(go.Scatter(
+                x=forecast_plot.index,
+                y=forecast_plot,
+                mode='markers',
+                name='Predicted Intensity',
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index + 2])
+            ), row=1, col=1)
+
+            fig.add_trace(go.Scatter(
+                x = forecast_mean_plot.index,
+                y = forecast_mean_plot,
+                mode = 'lines',
+                name = 'Mean Predicted Intensity',
+                line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[color_index + 2])
+            ), row=1, col=1)
+
+            color_index += 3
+
+            scores.append({
+                'group': group,
+                'train_root_mean_squared': train_rmse,
+                'test_root_mean_squared': test_rmse,
+                'train_r2_score': train_r2,
+                'test_r2_score': test_r2,
+            })
+
+    else:
+        input_df["Time"] = input_df["Time"].apply(convert_time_to_hours)
+        input_df = input_df.interpolate(method='linear', axis=0)
+
+        train_size = int(len(input_df) * train_size)
+        train_df, test_df = input_df[:train_size], input_df[train_size:]
+
+        train_df = train_df.set_index("Time")["Intensity"]
+        test_df = test_df.set_index("Time")["Intensity"]
+
+        if seasonal == "Yes":
+            model = ARIMA(train_df, order=(p, d, q))
+        else:
+            model = ARIMA(train_df, order=(p, d, q))
+
+        model_fit = model.fit()
+
+        forecast = model_fit.forecast(steps=len(test_df))
+
+        test_rmse = np.sqrt(mean_squared_error(test_df, forecast))
+        test_r2 = r2_score(test_df, forecast)
+        train_rmse = np.sqrt(mean_squared_error(train_df, model_fit.fittedvalues))
+        train_r2 = r2_score(train_df, model_fit.fittedvalues)
+
+        forecast_reset = forecast.reset_index(drop=True)
+        forecast_plot = pd.Series(forecast_reset.values, index=test_df.index)
+        forecast_plot = forecast_plot.groupby(forecast_plot.index).mean()
+
+        fig.add_trace(go.Scatter(
+            x=test_df.index,
+            y=test_df,
+            mode='markers',
+            name='Actual Intensity',
+            marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[0])
+        ), row=1, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=test_df.index,
+            y=forecast,
+            mode='markers',
+            name='Predicted Intensity',
+            line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2])
+        ), row=1, col=1)
+
+        fig.add_trace(go.Scatter(
+            x=forecast_plot.index,
+            y=forecast_plot,
+            mode='lines',
+            name='Mean Predicted Intensity',
+            line=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[3])
+        ), row=1, col=1)
+
+        scores.append({
+            'group': 'Overall',
+            'train_root_mean_squared': train_rmse,
+            'test_root_mean_squared': test_rmse,
+            'train_r2_score': train_r2,
+            'test_r2_score': test_r2,
+        })
+
+    annotation_text = "<br>".join([
+        f"Group: {res['group']} (Train/Test)"
+        f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
+        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
+        for res in scores
+    ])
+
+    fig.add_trace(go.Scatter(
+        x=[0],
+        y=[0.25],
+        text=[annotation_text],
+        mode='text',
+        textfont=dict(size=12),
+        showlegend=False
+    ), row=1, col=2)
+
+    fig.update_layout(
+        title=f"Intensity over Time for {protein_group}",
+        plot_bgcolor=colors["plot_bgcolor"],
+        xaxis_gridcolor=colors["gridcolor"],
+        yaxis_gridcolor=colors["gridcolor"],
+        xaxis_linecolor=colors["linecolor"],
+        yaxis_linecolor=colors["linecolor"],
+        xaxis_title="Time",
+        yaxis_title="Intensity",
+        legend_title="Legend",
+        autosize=True,
+        margin=dict(l=100, r=100, t=100, b=50),
+        legend=dict(
+            yanchor="top",
+            y=0.95,
+            xanchor="right",
+            x=0.775
+        )
+    )
+
+    fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
+    fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=1, col=2)
+
+    fig.update_annotations(font_size=12)
 
     return dict(
         scores=scores,

@@ -1332,7 +1332,9 @@ class TimeSeriesADFullerTestForm(MethodForm):
              "determines how strongly a time series is defined by a trend. The null hypothesis of the test is that the "
              "time series can be represented by a unit root, which implies that the time series is not stationary. "
              "The alternative hypothesis is that the time series is stationary. If the p-value is less than the "
-             "significance level, the null hypothesis can be rejected and the time series is considered stationary."
+             "significance level, the null hypothesis can be rejected and the time series is considered stationary.<br>"
+             "Dickey, D. & Fuller, Wayne. (1979). Distribution of the Estimators for Autoregressive Time Series With a Unit Root."
+             "JASA. Journal of the American Statistical Association. 74. 10.2307/2286348. "
         ),
     )
     input_df = CustomChoiceField(
@@ -1370,12 +1372,8 @@ class TimeSeriesADFullerTestForm(MethodForm):
 class TimeSeriesAutoARIMAForm(MethodForm):
     is_dynamic = True
     model_info = TextDisplayField(
-        label="Information about the AutoARIMA model",
+        label="Citation for AutoARIMA model",
         text=(
-            "Auto ARIMA is a function that automatically selects the best-fitting ARIMA model for a time series"
-            "by iterating over multiple combinations of model parameters to minimize an information criterion like AIC (Akaike Information Criterion)."
-            "It simplifies the model selection process, handling both seasonal and non-seasonal data,"
-            " and helps in making accurate forecasts."
         ),
     )
     input_df = CustomChoiceField(
@@ -1393,6 +1391,77 @@ class TimeSeriesAutoARIMAForm(MethodForm):
     )
     m = CustomNumberField(
         label = "The number of time steps for a single seasonal period (ignored if seasonal=No)",
+        min_value=1,
+        step_size=1,
+        initial=1,
+    )
+    train_size = CustomFloatField(
+        label="Train size: proportion of the dataset to include in the test split",
+        min_value=0,
+        max_value=1,
+        step_size=0.1,
+        initial=0.8,
+    )
+    grouping = CustomChoiceField(
+        choices= TimeSeriesGrouping,
+        label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
+        initial=TimeSeriesGrouping.with_grouping
+    )
+
+
+    def fill_form(self, run: Run) -> None:
+        self.fields["input_df"].choices = fill_helper.get_choices_for_peptide_df_steps(
+            run
+        )
+        input_df_instance_id = self.data.get(
+            "input_df", self.fields["input_df"].choices[0][0]
+        )
+
+        self.fields["protein_group"].choices = fill_helper.to_choices(
+            run.steps.get_step_output(
+                step_type=Step,
+                output_key="peptide_df",
+                instance_identifier=input_df_instance_id,
+            )["Protein ID"].unique()
+        )
+
+
+class TimeSeriesARIMAForm(MethodForm):
+    is_dynamic = True
+    """
+    model_info = TextDisplayField(
+        label="Citation for ARIMA model",
+        text=(
+        ),
+    )
+    """
+    input_df = CustomChoiceField(
+        choices=[],
+        label="Peptide dataframe",
+    )
+    protein_group = CustomChoiceField(
+        choices=[],
+        label="Protein group: which protein group to perform the AutoARIMA on",
+    )
+    seasonal = CustomChoiceField(
+        choices=YesNo,
+        label="Seasonal: Whether the ARIMA model should be seasonal",
+        initial=YesNo.no
+    )
+    p = CustomNumberField(
+        label = "The number of lag observations included in the model",
+        min_value=0,
+        step_size=1,
+        initial=1,
+    )
+    d = CustomNumberField(
+        label = "The number of times that the raw observations are differenced",
+        min_value=0,
+        step_size=1,
+        initial=1,
+    )
+    q = CustomNumberField(
+        label = "The size of the moving average window",
         min_value=1,
         step_size=1,
         initial=1,

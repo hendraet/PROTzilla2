@@ -19,6 +19,7 @@ from protzilla.data_analysis.time_series_regression_analysis import (
     time_series_ransac_regression,
      adfuller_test,
     time_series_auto_arima,
+    time_series_arima,
 )
 from protzilla.data_analysis.ptm_analysis import filter_peptides_of_protein, ptms_per_sample, \
     ptms_per_protein_and_sample
@@ -906,6 +907,37 @@ class TimeSeriesAutoARIMA(PlotStep):
 
     def method(self, inputs: dict) -> dict:
         return time_series_auto_arima(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["input_df"] = steps.get_step_output(Step, "peptide_df", inputs["input_df"])
+        inputs["metadata_df"] = steps.metadata_df
+        return inputs
+
+
+class TimeSeriesARIMA(PlotStep):
+    display_name = "ARIMA (AutoRegressive Integrated Moving Average)"
+    operation = "Time series analysis"
+    method_description = (
+        "Perform ARIMA on the time series data for a given protein group."
+    )
+
+    input_keys = [
+        "input_df",
+        "metadata_df",
+        "protein_group",
+        "seasonal",
+        "p",
+        "d",
+        "q",
+        "train_size",
+        "grouping",
+    ]
+    output_keys = [
+        "scores",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return time_series_arima(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["input_df"] = steps.get_step_output(Step, "peptide_df", inputs["input_df"])
