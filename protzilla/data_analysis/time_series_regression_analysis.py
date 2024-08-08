@@ -73,7 +73,7 @@ def time_series_linear_regression(
             X_group = group_df[["Time"]]
             y_group = group_df["Intensity"]
 
-            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, test_size=train_size, shuffle=False)
+            X_train, X_test, y_train, y_test = train_test_split(X_group, y_group, train_size=train_size, shuffle=False)
             model = LinearRegression()
             model.fit(X_train, y_train)
 
@@ -314,7 +314,7 @@ def time_series_ransac_regression(
             })
 
     else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=train_size, shuffle=False)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=train_size, shuffle=False)
         model = RANSACRegressor(base_estimator=LinearRegression())
         model.fit(X_train, y_train)
 

@@ -63,7 +63,7 @@ def time_series_test_data():
 
 def test_linear_regression_plot_with_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2,"With Grouping")
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.8,"With Grouping")
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
@@ -72,14 +72,14 @@ def test_linear_regression_plot_with_grouping(show_figures, time_series_test_dat
 
 def test_linear_regression_plot_without_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2,"Without Grouping")
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.8,"Without Grouping")
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
         fig.show()
     return
 
-def test_linear_regression_plot_invalid_test_size(time_series_test_data):
+def test_linear_regression_plot_invalid_train_size(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
         time_series_linear_regression(test_intensity, test_metadata, "Protein1", 2, "Without Grouping")
@@ -87,14 +87,23 @@ def test_linear_regression_plot_invalid_test_size(time_series_test_data):
 
 def test_linear_regression_outputs(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.2, "Without Grouping")
+    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.8, "Without Grouping")
     assert "scores" in outputs
     return
 
 
 def test_ransac_regression_plot_with_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2, "With Grouping")
+    outputs = time_series_ransac_regression(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        100,
+        0.99,
+        "absolute_error",
+        0.8,
+        "With Grouping"
+    )
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
@@ -103,22 +112,49 @@ def test_ransac_regression_plot_with_grouping(show_figures, time_series_test_dat
 
 def test_ransac_regression_plot_without_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2, "Without Grouping")
+    outputs = time_series_ransac_regression(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        100,
+        0.99,
+        "absolute_error",
+        0.8,
+        "With Grouping"
+    )
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
         fig.show()
     return
 
-def test_ransac_plot_invalid_test_size(time_series_test_data):
+def test_ransac_plot_invalid_train_size(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
-        time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 2, "Without Grouping")
+        time_series_ransac_regression(
+            test_intensity,
+            test_metadata,
+            "Protein1",
+            100,
+            0.99,
+            "absolute_error",
+            2,
+            "With Grouping"
+        )
     return
 
 def test_ransac_regression_outputs(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_ransac_regression(test_intensity, test_metadata, "Protein1", 0.2, "Without Grouping")
+    outputs = time_series_ransac_regression(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        100,
+        0.99,
+        "absolute_error",
+        0.8,
+        "With Grouping"
+    )
     assert "scores" in outputs
     return
 
