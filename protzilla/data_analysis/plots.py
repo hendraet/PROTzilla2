@@ -107,7 +107,7 @@ def create_volcano_plot(
     :param group1: the name of the first group
     :param group2: the name of the second group
     :param item_type: in ["Protein", "PTM"] the type of the items in the data
-    :param items_of_interest: the proteins that should be annotated in the plot
+    :param items_of_interest: the items that should be annotated in the plot
 
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
@@ -134,20 +134,20 @@ def create_volcano_plot(
     elif not isinstance(items_of_interest, list):
         items_of_interest = [items_of_interest]
 
-    # annotate the proteins of interest permanently in the plot
-    for protein in items_of_interest:
+    # annotate the items of interest permanently in the plot
+    for item in items_of_interest:
         fig.add_annotation(
             x=plot_df.loc[
-                plot_df[item_type] == protein,
+                plot_df[item_type] == item,
                 "log2_fold_change",
             ].values[0],
             y=-np.log10(
                 plot_df.loc[
-                    plot_df[item_type] == protein,
+                    plot_df[item_type] == item,
                     "corrected_p_value",
                 ].values[0]
             ),
-            text=protein,
+            text=item,
             showarrow=True,
             arrowhead=1,
             font=dict(color=colors["annotation_text_color"]),
@@ -160,8 +160,8 @@ def create_volcano_plot(
         )
 
     new_names = {
-        "Point(s) of interest": "Significant Proteins",
-        "Dataset": "Not Significant Proteins",
+        "Point(s) of interest": f"Significant {item_type}s",
+        "Dataset": f"Not Significant {item_type}s",
     }
 
     fig.for_each_trace(
@@ -172,11 +172,11 @@ def create_volcano_plot(
     )
     fig.update_traces(
         marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[2]),
-        selector=dict(name="Significant Proteins"),
+        selector=dict(name=f"Significant {item_type}s"),
     )
     fig.update_traces(
         marker=dict(color=PROTZILLA_DISCRETE_COLOR_SEQUENCE[0]),
-        selector=dict(name="Not Significant Proteins"),
+        selector=dict(name=f"Not Significant {item_type}s"),
     )
 
     return dict(plots=[fig])

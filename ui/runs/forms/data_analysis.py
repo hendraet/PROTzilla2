@@ -456,24 +456,15 @@ class PlotVolcanoForm(MethodForm):
     )
     items_of_interest = CustomMultipleChoiceField(
         choices=[],
-        label="Proteins of interest (will be highlighted)",
+        label="Items of interest (will be highlighted)",
     )
 
     def fill_form(self, run: Run) -> None:
         self.fields["input_dict"].choices = fill_helper.to_choices(
             run.steps.get_instance_identifiers(
-                DifferentialExpressionTTest
-                | DifferentialExpressionLinearModel
-                | DifferentialExpressionMannWhitneyOnIntensityForm,
-                "differentially_expressed_proteins_df",
+                Step, ["corrected_p_values_df", "log2_fold_change_df"],
             )
         )
-        self.fields["input_dict"].choices.extend(fill_helper.to_choices(
-            run.steps.get_instance_identifiers(
-                DifferentialExpressionMannWhitneyOnPTM,
-                "differentially_expressed_ptm_df",
-            )
-        ))
 
         input_dict_instance_id = self.data.get(
             "input_dict", self.fields["input_dict"].choices[0][0]
