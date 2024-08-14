@@ -929,6 +929,10 @@ class TimeSeriesARIMA(PlotStep):
         "p",
         "d",
         "q",
+        "P",
+        "D",
+        "Q",
+        "s",
         "train_size",
         "grouping",
     ]

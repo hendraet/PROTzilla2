@@ -1449,22 +1449,50 @@ class TimeSeriesARIMAForm(MethodForm):
         initial=YesNo.no
     )
     p = CustomNumberField(
-        label = "The number of lag observations included in the model",
+        label = "Autoregressive Order: The number of lag observations included in the model",
         min_value=0,
         step_size=1,
         initial=1,
     )
     d = CustomNumberField(
-        label = "The number of times that the raw observations are differenced",
+        label = "Differencing Order: The number of times that the raw observations are differenced",
         min_value=0,
         step_size=1,
         initial=1,
     )
     q = CustomNumberField(
-        label = "The size of the moving average window",
-        min_value=1,
+        label = "Moving Average Order: The size of the moving average window",
+        min_value=0,
         step_size=1,
         initial=1,
+    )
+    P = CustomNumberField(
+        label = "Seasonal Autoregressive Order: The number of seasonal lag observations included in the model",
+        min_value=0,
+        step_size=1,
+        initial=0,
+        required=False
+    )
+    D = CustomNumberField(
+        label = "Seasonal Differencing Order: The number of times that the seasonal observations are differenced",
+        min_value=0,
+        step_size=1,
+        initial=0,
+        required=False
+    )
+    Q = CustomNumberField(
+        label = "Seasonal Moving Average Order: The size of the seasonal moving average window",
+        min_value=0,
+        step_size=1,
+        initial=0,
+        required=False
+    )
+    s = CustomNumberField(
+        label = "Seasonal Period: The number of periods for a single seasonal cycle",
+        min_value=0,
+        step_size=1,
+        initial=0,
+        required=False
     )
     train_size = CustomFloatField(
         label="Train size: proportion of the dataset to include in the test split",
@@ -1495,3 +1523,9 @@ class TimeSeriesARIMAForm(MethodForm):
                 instance_identifier=input_df_instance_id,
             )["Protein ID"].unique()
         )
+        seasonal = self.data.get("seasonal")
+        if seasonal == "No":
+            self.toggle_visibility("P", False)
+            self.toggle_visibility("D", False)
+            self.toggle_visibility("Q", False)
+            self.toggle_visibility("s", False)

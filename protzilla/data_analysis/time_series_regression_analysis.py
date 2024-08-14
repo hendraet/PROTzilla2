@@ -720,6 +720,10 @@ def time_series_arima(
     p: int,
     d: int,
     q: int,
+    P: int,
+    D: int,
+    Q: int,
+    s: int,
     train_size: float,
     grouping: str,
 ) -> dict:
@@ -770,7 +774,7 @@ def time_series_arima(
                 model = ARIMA(
                     train_df,
                     order=(p, d, q),
-                    #seasonal_order=(P, D, Q, m)
+                    seasonal_order=(P, D, Q, s)
                 )
             else:
                 model = ARIMA(
@@ -836,7 +840,11 @@ def time_series_arima(
         test_df = test_df.set_index("Time")["Intensity"]
 
         if seasonal == "Yes":
-            model = ARIMA(train_df, order=(p, d, q))
+            model = ARIMA(
+                train_df,
+                order=(p, d, q),
+                seasonal_order = (P, D, Q, s),
+            )
         else:
             model = ARIMA(train_df, order=(p, d, q))
 
