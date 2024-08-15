@@ -5,6 +5,8 @@ from protzilla.data_analysis.time_series_regression_analysis import (
     time_series_linear_regression,
     time_series_ransac_regression,
     adfuller_test,
+    time_series_auto_arima,
+    time_series_arima,
 )
 
 
@@ -39,6 +41,13 @@ def time_series_test_data():
         ["Sample7", "Protein2", "Gene1", 13],
         ["Sample7", "Protein3", "Gene1", 3],
         ["Sample7", "Protein4", "Gene1", 11],
+        ["Sample1", "Protein1", "Gene2", 10],
+        ["Sample1", "Protein2", "Gene2", 14],
+        ["Sample1", "Protein3", "Gene2", 2],
+        ["Sample1", "Protein4", "Gene2", 10],
+        ["Sample2", "Protein1", "Gene2", 12],
+        ["Sample2", "Protein1", "Gene3", 13],
+
     )
 
     test_intensity_df = pd.DataFrame(
@@ -168,4 +177,179 @@ def test_adfuller_test(time_series_test_data):
     assert "critical_values" in outputs
     assert "is_stationary" in outputs
     assert "messages" in outputs
+    return
+
+
+def test_auto_arima_plot_with_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_auto_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "No",
+        1,
+        0.5,
+        "With Grouping"
+    )
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_auto_arima_plot_without_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_auto_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "No",
+        1,
+        0.5,
+        "With Grouping"
+    )
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_auto_arima_plot_invalid_train_size(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    with pytest.raises(ValueError):
+        time_series_auto_arima(
+            test_intensity,
+            test_metadata,
+            "Protein1",
+            "No",
+            1,
+            2,
+            "With Grouping"
+        )
+    return
+
+
+def test_auto_arima_outputs(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_auto_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "No",
+        1,
+        0.5,
+        "With Grouping"
+    )
+    assert "scores" in outputs
+    return
+
+
+def test_arima_plot_with_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "No",
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.5,
+        "With Grouping"
+    )
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_arima_plot_seasonal_with_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "Yes",
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.5,
+        "With Grouping"
+    )
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_arima_plot_without_grouping(show_figures, time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "No",
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.5,
+        "Without Grouping"
+    )
+    assert "plots" in outputs
+    fig = outputs["plots"][0]
+    if show_figures:
+        fig.show()
+    return
+
+def test_arima_plot_invalid_train_size(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    with pytest.raises(ValueError):
+        time_series_arima(
+            test_intensity,
+            test_metadata,
+            "Protein1",
+            "No",
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            2,
+            "With Grouping"
+        )
+    return
+
+
+def test_arima_outputs(time_series_test_data):
+    test_intensity, test_metadata = time_series_test_data
+    outputs = time_series_arima(
+        test_intensity,
+        test_metadata,
+        "Protein1",
+        "No",
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.5,
+        "With Grouping"
+    )
+    assert "scores" in outputs
     return
