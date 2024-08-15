@@ -161,7 +161,7 @@ def time_series_linear_regression(
     annotation_text = "<br>".join([
         f"Group: {res['group']} (Train/Test)"
         f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
+        f"R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
@@ -371,7 +371,7 @@ def time_series_ransac_regression(
     annotation_text = "<br>".join([
         f"Group: {res['group']} (Train/Test)"
         f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
+        f"R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
@@ -667,7 +667,7 @@ def time_series_auto_arima(
     annotation_text = "<br>".join([
         f"Group: {res['group']} (Train/Test)"
         f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
+        f"R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
@@ -896,7 +896,7 @@ def time_series_arima(
     annotation_text = "<br>".join([
         f"Group: {res['group']} (Train/Test)"
         f"<br>RMSE: {res['train_root_mean_squared']:.3f} / {res['test_root_mean_squared']:.3f}<br>"
-        f"Train R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
+        f"R²: {res['train_r2_score']:.3f} / {res['test_r2_score']:.3f}<br>"
         for res in scores
     ])
 
