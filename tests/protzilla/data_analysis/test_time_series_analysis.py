@@ -72,7 +72,15 @@ def time_series_test_data():
 
 def test_linear_regression_plot_with_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.8,"With Grouping")
+    outputs = time_series_linear_regression(
+        test_intensity,
+        test_metadata,
+        "Time",
+        "Protein1", #
+        0.8,
+        "Group",
+        "With Grouping"
+    )
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
@@ -81,7 +89,15 @@ def test_linear_regression_plot_with_grouping(show_figures, time_series_test_dat
 
 def test_linear_regression_plot_without_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.8,"Without Grouping")
+    outputs = time_series_linear_regression(
+        test_intensity,
+        test_metadata,
+        "Time",
+        "Protein1", #
+        0.8,
+        "Group",
+        "With Grouping"
+    )
     assert "plots" in outputs
     fig = outputs["plots"][0]
     if show_figures:
@@ -91,12 +107,28 @@ def test_linear_regression_plot_without_grouping(show_figures, time_series_test_
 def test_linear_regression_plot_invalid_train_size(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
     with pytest.raises(ValueError):
-        time_series_linear_regression(test_intensity, test_metadata, "Protein1", 2, "Without Grouping")
+        time_series_linear_regression(
+            test_intensity,
+            test_metadata,
+            "Time",
+            "Protein1",  #
+            2,
+            "Group",
+            "With Grouping"
+        )
     return
 
 def test_linear_regression_outputs(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_linear_regression(test_intensity, test_metadata, "Protein1", 0.8, "Without Grouping")
+    outputs = time_series_linear_regression(
+        test_intensity,
+        test_metadata,
+        "Time",
+        "Protein1", #
+        0.8,
+        "Group",
+        "With Grouping"
+    )
     assert "scores" in outputs
     return
 
@@ -106,11 +138,13 @@ def test_ransac_regression_plot_with_grouping(show_figures, time_series_test_dat
     outputs = time_series_ransac_regression(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         100,
         0.99,
         "absolute_error",
         0.8,
+        "Group",
         "With Grouping"
     )
     assert "plots" in outputs
@@ -124,11 +158,13 @@ def test_ransac_regression_plot_without_grouping(show_figures, time_series_test_
     outputs = time_series_ransac_regression(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         100,
         0.99,
         "absolute_error",
         0.8,
+        "Group",
         "With Grouping"
     )
     assert "plots" in outputs
@@ -143,11 +179,13 @@ def test_ransac_plot_invalid_train_size(time_series_test_data):
         time_series_ransac_regression(
             test_intensity,
             test_metadata,
+            "Time",
             "Protein1",
             100,
             0.99,
             "absolute_error",
             2,
+            "Group",
             "With Grouping"
         )
     return
@@ -157,11 +195,13 @@ def test_ransac_regression_outputs(time_series_test_data):
     outputs = time_series_ransac_regression(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         100,
         0.99,
         "absolute_error",
         0.8,
+        "Group",
         "With Grouping"
     )
     assert "scores" in outputs
@@ -185,10 +225,12 @@ def test_auto_arima_plot_with_grouping(show_figures, time_series_test_data):
     outputs = time_series_auto_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         "No",
         1,
         0.5,
+        "Group",
         "With Grouping"
     )
     assert "plots" in outputs
@@ -199,13 +241,15 @@ def test_auto_arima_plot_with_grouping(show_figures, time_series_test_data):
 
 def test_auto_arima_plot_without_grouping(show_figures, time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_auto_arima(
+    outputs =  time_series_auto_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         "No",
         1,
         0.5,
+        "Group",
         "With Grouping"
     )
     assert "plots" in outputs
@@ -220,10 +264,12 @@ def test_auto_arima_plot_invalid_train_size(time_series_test_data):
         time_series_auto_arima(
             test_intensity,
             test_metadata,
+            "Time",
             "Protein1",
             "No",
             1,
             2,
+            "Group",
             "With Grouping"
         )
     return
@@ -231,13 +277,15 @@ def test_auto_arima_plot_invalid_train_size(time_series_test_data):
 
 def test_auto_arima_outputs(time_series_test_data):
     test_intensity, test_metadata = time_series_test_data
-    outputs = time_series_auto_arima(
+    outputs =  time_series_auto_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         "No",
         1,
         0.5,
+        "Group",
         "With Grouping"
     )
     assert "scores" in outputs
@@ -249,6 +297,7 @@ def test_arima_plot_with_grouping(show_figures, time_series_test_data):
     outputs = time_series_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         "No",
         1,
@@ -259,6 +308,7 @@ def test_arima_plot_with_grouping(show_figures, time_series_test_data):
         0,
         0,
         0.5,
+        "Group",
         "With Grouping"
     )
     assert "plots" in outputs
@@ -272,8 +322,9 @@ def test_arima_plot_seasonal_with_grouping(show_figures, time_series_test_data):
     outputs = time_series_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
-        "Yes",
+        "No",
         1,
         1,
         1,
@@ -282,6 +333,7 @@ def test_arima_plot_seasonal_with_grouping(show_figures, time_series_test_data):
         0,
         0,
         0.5,
+        "Group",
         "With Grouping"
     )
     assert "plots" in outputs
@@ -295,6 +347,7 @@ def test_arima_plot_without_grouping(show_figures, time_series_test_data):
     outputs = time_series_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         "No",
         1,
@@ -305,7 +358,8 @@ def test_arima_plot_without_grouping(show_figures, time_series_test_data):
         0,
         0,
         0.5,
-        "Without Grouping"
+        "Group",
+        "With Grouping"
     )
     assert "plots" in outputs
     fig = outputs["plots"][0]
@@ -319,6 +373,7 @@ def test_arima_plot_invalid_train_size(time_series_test_data):
         time_series_arima(
             test_intensity,
             test_metadata,
+            "Time",
             "Protein1",
             "No",
             1,
@@ -329,6 +384,7 @@ def test_arima_plot_invalid_train_size(time_series_test_data):
             0,
             0,
             2,
+            "Group",
             "With Grouping"
         )
     return
@@ -339,6 +395,7 @@ def test_arima_outputs(time_series_test_data):
     outputs = time_series_arima(
         test_intensity,
         test_metadata,
+        "Time",
         "Protein1",
         "No",
         1,
@@ -349,7 +406,8 @@ def test_arima_outputs(time_series_test_data):
         0,
         0,
         0.5,
-        "With Grouping"
+        "Group",
+        "With Grouping",
     )
     assert "scores" in outputs
     return
