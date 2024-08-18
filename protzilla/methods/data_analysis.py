@@ -806,8 +806,10 @@ class TimeSeriesLinearRegression(PlotStep):
     input_keys = [
         "input_df",
         "metadata_df",
+        "time_column_name",
         "protein_group",
         "train_size",
+        "grouping_column_name",
         "grouping",
     ]
     output_keys = [
@@ -831,11 +833,13 @@ class TimeSeriesRANSACRegression(PlotStep):
     input_keys = [
         "input_df",
         "metadata_df",
+        "time_column_name",
         "protein_group",
         "max_trials",
         "stop_probability",
         "loss",
         "train_size",
+        "grouping_column_name",
         "grouping",
     ]
     output_keys = [
@@ -858,6 +862,7 @@ class TimeSeriesADFullerTest(DataAnalysisStep):
     input_keys = [
         "input_df",
         "metadata_df",
+        "time_column_name",
         "protein_group",
         "alpha",
     ]
@@ -887,10 +892,12 @@ class TimeSeriesAutoARIMA(PlotStep):
     input_keys = [
         "input_df",
         "metadata_df",
+        "time_column_name",
         "protein_group",
         "seasonal",
         "m",
         "train_size",
+        "grouping_column_name",
         "grouping",
     ]
     output_keys = [
@@ -916,6 +923,7 @@ class TimeSeriesARIMA(PlotStep):
     input_keys = [
         "input_df",
         "metadata_df",
+        "time_column_name",
         "protein_group",
         "seasonal",
         "p",
@@ -926,6 +934,7 @@ class TimeSeriesARIMA(PlotStep):
         "Q",
         "s",
         "train_size",
+        "grouping_column_name",
         "grouping",
     ]
     output_keys = [

@@ -1240,6 +1240,7 @@ class TimeSeriesLinearRegressionForm(MethodForm):
         choices=[],
         label="Peptide dataframe",
     )
+    time_column_name = CustomChoiceField(choices=[], label="Time: The column name from metadata that represents time")
     protein_group = CustomChoiceField(
         choices=[],
         label="Protein group: which protein group to perform the linear regression on",
@@ -1251,6 +1252,7 @@ class TimeSeriesLinearRegressionForm(MethodForm):
         step_size=0.1,
         initial=0.8
     )
+    grouping_column_name = CustomChoiceField(choices=[], label="Grouping from metadata: The column name from metadata that represents the grouping")
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,
         label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
@@ -1265,6 +1267,13 @@ class TimeSeriesLinearRegressionForm(MethodForm):
         input_df_instance_id = self.data.get(
             "input_df", self.fields["input_df"].choices[0][0]
         )
+        self.fields[
+            "time_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
+
+        self.fields[
+            "grouping_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
 
         self.fields["protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(
@@ -1281,6 +1290,7 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
         choices=[],
         label="Peptide dataframe",
     )
+    time_column_name = CustomChoiceField(choices=[], label="Time: The column name from metadata that represents time")
     protein_group = CustomChoiceField(
         choices=[],
         label="Protein group: which protein group to perform the RANSAC regression on",
@@ -1310,6 +1320,7 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
         step_size=0.1,
         initial=0.8
     )
+    grouping_column_name = CustomChoiceField(choices=[], label="Grouping from metadata: The column name from metadata that represents the grouping")
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,
         label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
@@ -1324,6 +1335,14 @@ class TimeSeriesRANSACRegressionForm(MethodForm):
         input_df_instance_id = self.data.get(
             "input_df", self.fields["input_df"].choices[0][0]
         )
+
+        self.fields[
+            "time_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
+
+        self.fields[
+            "grouping_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
 
         self.fields["protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(
@@ -1352,6 +1371,7 @@ class TimeSeriesADFullerTestForm(MethodForm):
         choices=[],
         label="Peptide dataframe",
     )
+    time_column_name = CustomChoiceField(choices=[], label="Time: which column from metadata that represents time")
     protein_group = CustomChoiceField(
         choices=[],
         label="Protein group: which protein group to perform the ADFuller test on",
@@ -1370,6 +1390,10 @@ class TimeSeriesADFullerTestForm(MethodForm):
         input_df_instance_id = self.data.get(
             "input_df", self.fields["input_df"].choices[0][0]
         )
+
+        self.fields[
+            "time_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
 
         self.fields["protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(
@@ -1391,6 +1415,7 @@ class TimeSeriesAutoARIMAForm(MethodForm):
         choices=[],
         label="Peptide dataframe",
     )
+    time_column_name = CustomChoiceField(choices=[], label="Time: The column name from metadata that represents time")
     protein_group = CustomChoiceField(
         choices=[],
         label="Protein group: which protein group to perform the AutoARIMA on",
@@ -1413,6 +1438,7 @@ class TimeSeriesAutoARIMAForm(MethodForm):
         step_size=0.1,
         initial=0.8,
     )
+    grouping_column_name = CustomChoiceField(choices=[], label="Grouping from metadata: The column name from metadata that represents the grouping")
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,
         label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
@@ -1427,6 +1453,14 @@ class TimeSeriesAutoARIMAForm(MethodForm):
         input_df_instance_id = self.data.get(
             "input_df", self.fields["input_df"].choices[0][0]
         )
+
+        self.fields[
+            "time_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
+
+        self.fields[
+            "grouping_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
 
         self.fields["protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(
@@ -1450,6 +1484,7 @@ class TimeSeriesARIMAForm(MethodForm):
         choices=[],
         label="Peptide dataframe",
     )
+    time_column_name = CustomChoiceField(choices=[], label="Time: The column name from metadata that represents time")
     protein_group = CustomChoiceField(
         choices=[],
         label="Protein group: which protein group to perform the AutoARIMA on",
@@ -1512,6 +1547,7 @@ class TimeSeriesARIMAForm(MethodForm):
         step_size=0.1,
         initial=0.8,
     )
+    grouping_column_name = CustomChoiceField(choices=[], label="Grouping from metadata: The column name from metadata that represents the grouping")
     grouping = CustomChoiceField(
         choices= TimeSeriesGrouping,
         label="Option to select whether regression should be performed on the entire dataset or separately on the control and experimental groups",
@@ -1526,6 +1562,14 @@ class TimeSeriesARIMAForm(MethodForm):
         input_df_instance_id = self.data.get(
             "input_df", self.fields["input_df"].choices[0][0]
         )
+
+        self.fields[
+            "time_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
+
+        self.fields[
+            "grouping_column_name"
+        ].choices = fill_helper.get_choices_for_metadata_non_sample_columns(run)
 
         self.fields["protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(

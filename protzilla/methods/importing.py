@@ -96,7 +96,8 @@ class MetadataColumnAssignment(ImportingStep):
     display_name = "Metadata column assignment"
     operation = "metadataimport"
     method_description = (
-        "Assign columns to metadata categories, repeatable for each category"
+        "Protzilla uses a unique metadata column name to identify certain features in the metadata. "
+        "This step assigns the metadata columns to the correct feature."
     )
 
     input_keys = [

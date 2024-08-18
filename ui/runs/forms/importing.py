@@ -93,12 +93,12 @@ class MetadataImportMethodDiannForm(MethodForm):
 class MetadataColumnAssignmentForm(MethodForm):
     metadata_required_column = CustomChoiceField(
         choices=EmptyEnum,
-        label="Missing, but required metadata columns",
+        label="Columns in Metadata that needs to be assigned",
         required=False,
     )
     metadata_unknown_column = CustomChoiceField(
         choices=EmptyEnum,
-        label="Existing, but unknown metadata columns",
+        label="Available columns in Metadata that can be assigned",
         required=False,
     )
 
@@ -111,7 +111,7 @@ class MetadataColumnAssignmentForm(MethodForm):
         if metadata is not None:
             self.fields["metadata_required_column"].choices = [
                 (col, col)
-                for col in ["Sample", "Group", "Batch"]
+                for col in ["Sample", "Group", "Batch", "Time"]
                 if col not in metadata.columns
             ]
             if len(self.fields["metadata_required_column"].choices) == 0:
@@ -122,7 +122,7 @@ class MetadataColumnAssignmentForm(MethodForm):
 
             unknown_columns = list(
                 metadata.columns[
-                    ~metadata.columns.isin(["Sample", "Group", "Batch"])
+                    ~metadata.columns.isin(["Sample", "Group", "Batch", "Time"])
                 ].unique()
             )
 
