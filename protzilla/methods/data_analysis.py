@@ -14,8 +14,8 @@ from protzilla.data_analysis.differential_expression_mann_whitney import (
     mann_whitney_test_on_intensity_data, mann_whitney_test_on_ptm_data)
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
-from protzilla.data_analysis.ptm_analysis import filter_peptides_of_protein, ptms_per_sample, \
-    ptms_per_protein_and_sample
+from protzilla.data_analysis.ptm_analysis import ptms_per_sample, \
+    ptms_per_protein_and_sample, select_peptides_of_protein
 from protzilla.data_analysis.model_evaluation import evaluate_classification_model
 from protzilla.data_analysis.plots import (
     clustergram_plot,
@@ -744,7 +744,7 @@ class ProteinGraphVariationGraph(DataAnalysisStep):
 
 
 class SelectPeptidesForProtein(DataAnalysisStep):
-    display_name = "Filter Peptides of Protein"
+    display_name = "Select Peptides of Protein"
     operation = "Peptide analysis"
     method_description = "Filter peptides for the a selected Protein of Interest from a peptide dataframe"
 
@@ -757,7 +757,7 @@ class SelectPeptidesForProtein(DataAnalysisStep):
     ]
 
     def method(self, inputs: dict) -> dict:
-        return filter_peptides_of_protein(**inputs)
+        return select_peptides_of_protein(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["peptide_df"] = steps.get_step_output(
