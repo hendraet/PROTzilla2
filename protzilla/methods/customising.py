@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from protzilla.steps import Step, StepManager
 
-from protzilla.customising.accessibility import customise, enhanced_reading_method
+from protzilla.customising.accessibility import color_choice_method, enhanced_reading_method
 
 
 class CustomisingStep(Step):
@@ -28,7 +28,7 @@ class ChangeColor(CustomisingStep):
         return inputs
 
     def method(self, inputs):
-        return customise(**inputs)
+        return color_choice_method(**inputs)
 
 
 class EnhancedReading(CustomisingStep):

@@ -14,10 +14,11 @@ PROTZILLA_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
     "#CE5A5A",  # red
     "#87A8B9",  # light blue
-    "#a1a5b2",  # grey
-    "#E2A46D",  # orange
-    "#1767CE"  # blue
-]
+    "#A7A1B2",  # grey
+    "#F1A765",  # orange
+    "#8E3F25"   # dark red
+
+     ]
 
 PROTAN_DISCRETE_COLOR_SEQUENCE = [
     "#4A536A",  # blue
@@ -25,7 +26,7 @@ PROTAN_DISCRETE_COLOR_SEQUENCE = [
     "#a8b3ef",  # light blue
     "#a1a5b2",  # grey
     "#0051a9",  # dark blue
-    "#7D7800"  # dark yellow
+    "#7D7800"   # dark yellow
 
 ]
 
@@ -44,8 +45,8 @@ TRITAN_DISCRETE_COLOR_SEQUENCE = [
     "#f48e9b",  # pink
     "#6C9AAF",  # light blue
     "#a1a5b2",  # grey
-    "#22c6d5"  # turquoise
-    "#9B5D64"  # dark pink
+    "#22c6d5",  # turquoise
+    "#8e3e42"   # dark pink
 ]
 
 # This sequence shouldn't be used if the plot requires all six or more colors,

@@ -45,7 +45,7 @@ def create_pie_plot(
             "text": style_text(f"<b>{heading}</b>", add_letter_spacing, add_word_spacing),
             "font": dict(size=16 + add_font_size, family="Arial"),
             "y": 0.98,
-            "x": 0.5,
+            "x": 0.2,
             "xanchor": "center",
             "yanchor": "top",
         },

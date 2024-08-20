@@ -374,7 +374,7 @@ def prot_quant_plot(
     :return: returns a dictionary containing a list with a plotly figure and/or a list of messages
     """
     data_colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
-    enhanced_reading = True
+    enhanced_reading = get_enhanced_reading_value()
     add_font_size, add_letter_spacing, add_word_spacing = get_text_parameters()
     wide_df = long_to_wide(input_df) if is_long_format(input_df) else input_df
 
@@ -410,12 +410,16 @@ def prot_quant_plot(
         lower_upper_x.append(index)
         lower_upper_y.append(row.min())
 
+    intensity_range_name = "Intensity Range"
+    if enhanced_reading:
+        intensity_range_name = "<b>Intensity Range</b>"
+
     fig.add_trace(
         go.Scatter(
             x=lower_upper_x,
             y=lower_upper_y,
             fill="toself",
-            name=style_text("<b>Intensity Range</b>", add_letter_spacing, add_word_spacing),
+            name=style_text(intensity_range_name, add_letter_spacing, add_word_spacing),
             line=dict(color="lightgray"),
         )
     )
@@ -524,7 +528,7 @@ def prot_quant_plot(
             tickangle=0,
             tickvals=wide_df.index,
             ticktext=[
-                f"<span style='font-size: 12px; color:{color_mapping.get(label[0], 'black')}'><b>•</b></span>"
+                f"<span style='font-size: 10px; color:{color_mapping.get(label[0], 'black')}'><b>•</b></span>"
                 for label in wide_df.index
             ],
         ),

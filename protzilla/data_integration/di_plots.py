@@ -10,6 +10,7 @@ from protzilla.utilities.utilities import fig_to_base64
 import protzilla.constants.text as text_constants
 import protzilla.constants.colors as colorscheme
 
+
 def style_text(text: str, letter_spacing: float, word_spacing: float) -> str:
     """
     Function to style text with letter spacing and word spacing.
@@ -21,6 +22,7 @@ def style_text(text: str, letter_spacing: float, word_spacing: float) -> str:
     """
     return f'<span style="letter-spacing:{letter_spacing}pt;word-spacing:{word_spacing}pt;">{text}</span>'
 
+
 def get_text_parameters():
     """
         Retrieves text parameters from PROTZILLA_TEXT_PARAMETERS.
@@ -29,6 +31,7 @@ def get_text_parameters():
     add_letter_spacing = text_constants.PROTZILLA_TEXT_PARAMETERS["add_letter_spacing"]
     add_word_spacing = text_constants.PROTZILLA_TEXT_PARAMETERS["add_word_spacing"]
     return add_font_size, add_letter_spacing, add_word_spacing
+
 
 def get_enhanced_reading_value():
     """
@@ -52,15 +55,16 @@ def add_spacing(text: str, letter_spacing: float, word_spacing: float) -> str:
     spaced_text = spaced_text.replace(' ', ' ' * int(word_spacing))
     return spaced_text
 
+
 def GO_enrichment_bar_plot(
-    input_df,
-    top_terms,
-    cutoff,
-    value,
-    gene_sets=[],
-    title="",
-    colors=None,
-    figsize=None,
+        input_df,
+        top_terms,
+        cutoff,
+        value,
+        gene_sets=[],
+        title="",
+        colors=None,
+        figsize=None,
 ):
     """
     Create a bar plot for the GO enrichment results. The plot is created using the gseapy library.
@@ -154,7 +158,6 @@ def GO_enrichment_bar_plot(
     elif value == "p-value":
         column = "P-value" if restring_input else "Adjusted P-value"
 
-
     if colors == "" or colors is None or len(colors) == 0:
         colors = colorscheme.PROTZILLA_DISCRETE_COLOR_SEQUENCE
         colors[1], colors[2] = colors[2], colors[1]
@@ -220,16 +223,16 @@ def GO_enrichment_bar_plot(
 
 
 def GO_enrichment_dot_plot(
-    input_df,
-    top_terms,
-    cutoff,
-    gene_sets=[],
-    x_axis_type="Gene Sets",
-    title="",
-    rotate_x_labels=False,
-    show_ring=False,
-    dot_size=5,
-    figsize=None,
+        input_df,
+        top_terms,
+        cutoff,
+        gene_sets=[],
+        x_axis_type="Gene Sets",
+        title="",
+        rotate_x_labels=False,
+        show_ring=False,
+        dot_size=5,
+        figsize=None,
 ):
     """
     Creates a dot plot for the GO enrichment results. The plot is created using the gseapy library.

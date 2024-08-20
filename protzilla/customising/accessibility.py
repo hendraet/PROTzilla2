@@ -2,8 +2,7 @@ import protzilla.constants.colors as color_constants
 import protzilla.constants.text as text_constants
 
 
-def customise(colors: str, custom_colors: str) -> dict:
-    print("Customising colors")
+def color_choice_method(colors: str, custom_colors: str) -> dict:
     if colors != "custom":
         color_constants.get_color_sequence(colors)
         color_constants.get_continuous_color_sequence(colors)
