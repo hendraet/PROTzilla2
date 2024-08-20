@@ -240,6 +240,51 @@ def check_sample_size_calculation_implemented_without_log(
 
     return dict(required_sample_size=required_sample_size)
 
+def power_calculation_test(
+    differentially_expressed_proteins_df: pd.DataFrame,
+    significant_proteins_df: pd.DataFrame,
+    significant_proteins_only: bool,
+    alpha: float,
+    fc_threshold: float,
+    group1: str,
+    group2: str,
+    selected_protein_group: str,
+    intensity_name: str = None
+) -> float:
+
+    """
+    Function to calculate the power of the t-test for a selected protein group.
+
+    :param differentially_expressed_proteins_df: The dataframe containing the differentially expressed proteins from t-test output.
+    :param significant_proteins_df: The dataframe containing the significant proteins from t-test output.
+    :param significant_proteins_only: A boolean to display only significant proteins for selection to the user.
+    :param alpha: The significance level. The value for alpha is taken from the t-test by default.
+    :param fc_threshold: The fold change threshold.
+    :param group1: The name of the first group.
+    :param group2: The name of the second group.
+    :param selected_protein_group: The selected protein group for which the power is to be calculated.
+    :param intensity_name: The name of the column containing the protein group intensities.
+    :return: The power of the test.
+    """
+    if selected_protein_group not in significant_proteins_df['Protein ID'].values and selected_protein_group not in differentially_expressed_proteins_df['Protein ID'].values:
+        raise ValueError("Please select a valid protein group.")
+    protein_group = selected_protein_group
+    z_alpha = stats.norm.ppf(1 - alpha / 2)
+
+    variance_protein_group = variance_protein_group_calculation_max(
+        intensity_df=differentially_expressed_proteins_df,
+        protein_id=protein_group,
+        group1=group1,
+        group2=group2,
+        intensity_name=intensity_name,
+    )
+    sample_size = min(differentially_expressed_proteins_df.groupby(['Group', 'Protein ID'])['Sample'].count())
+    z_beta = fc_threshold * np.sqrt(sample_size / (2 * variance_protein_group)) - z_alpha
+    power = round(stats.norm.cdf(z_beta), 2)
+
+    return dict(power=power)
+
+
 def power_calculation(
     differentially_expressed_proteins_df: pd.DataFrame,
     significant_proteins_df: pd.DataFrame,
@@ -278,11 +323,10 @@ def power_calculation(
         group2=group2,
         intensity_name=intensity_name,
     )
-    sample_size = differentially_expressed_proteins_df.groupby('Group')['Sample'].count()
-    z_beta = fc_threshold * np.sqrt(sample_size/(2*variance_protein_group**2))-z_alpha
-    power = stats.norm.cdf(z_beta)
+    sample_size = min(differentially_expressed_proteins_df.groupby(['Group', 'Protein ID'])['Sample'].count())
+    z_beta = fc_threshold * np.sqrt(sample_size / (2 * variance_protein_group)) - z_alpha
+    power = round(stats.norm.cdf(z_beta), 2)
 
     return dict(power=power)
-
 
 

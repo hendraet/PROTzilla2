@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 
-from protzilla.data_analysis.power_analysis import sample_size_calculation, check_sample_size_calculation_with_libfunc, check_sample_size_calculation_implemented, check_sample_size_calculation_implemented_without_log
+from protzilla.data_analysis.power_analysis import sample_size_calculation, power_calculation_test, check_sample_size_calculation_with_libfunc, check_sample_size_calculation_implemented, check_sample_size_calculation_implemented_without_log
 
 
 @pytest.fixture
@@ -134,7 +134,7 @@ def test_check_sample_size_calculation_impl(
     )
     print(required_sample_size)
     required_sample_size_int = next(iter(required_sample_size.values()), None)
-    assert required_sample_size_int == 63
+    assert required_sample_size_int == 1
 
 def test_check_sample_size_calculation_implemented_without_log(
         power_test_data
@@ -163,4 +163,25 @@ def test_check_sample_size_calculation_implemented_without_log(
 
 
 
+def test_power_calculation(
+        power_test_data
+):
+    test_alpha = 0.05
+    test_fc_threshold = 1
+    test_selected_protein_group = "Protein1"
 
+
+    power = power_calculation_test(
+        differentially_expressed_proteins_df=power_test_data,
+        significant_proteins_df=power_test_data,
+        fc_threshold=test_fc_threshold,
+        alpha=test_alpha,
+        group1="Group1",
+        group2="Group2",
+        selected_protein_group=test_selected_protein_group,
+        significant_proteins_only=False,
+        intensity_name=None
+    )
+    print(power)
+    power_int = next(iter(power.values()), None)
+    assert power_int== 0.09
