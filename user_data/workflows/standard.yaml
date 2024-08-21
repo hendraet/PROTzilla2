@@ -60,10 +60,10 @@ steps:
     type: DifferentialExpressionTTest
   - form_inputs: { }
     inputs: { }
-    type: PowerAnalysisPowerCalculation
+    type: PowerAnalysisSampleSizeCalculation
   - form_inputs: { }
     inputs: { }
-    type: PowerAnalysisSampleSizeCalculation
+    type: PowerAnalysisPowerCalculation
   - form_inputs:
       fc_threshold: 1
     inputs: { }

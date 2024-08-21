@@ -777,7 +777,7 @@ class PowerAnalysisPowerCalculation(DataAnalysisStep):
         "group1",
         "group2",
     ]
-    output_keys = ["power",]
+    output_keys = ["power"]
 
     def method(self, inputs: dict) -> dict:
         return power_calculation(**inputs)

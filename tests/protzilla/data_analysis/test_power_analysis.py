@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 
-from protzilla.data_analysis.power_analysis import sample_size_calculation, power_calculation_test, check_sample_size_calculation_with_libfunc, check_sample_size_calculation_implemented, check_sample_size_calculation_implemented_without_log
+from protzilla.data_analysis.power_analysis import sample_size_calculation, power_calculation, check_sample_size_calculation_with_libfunc, check_sample_size_calculation_implemented, check_sample_size_calculation_implemented_without_log
 
 
 @pytest.fixture
@@ -171,7 +171,7 @@ def test_power_calculation(
     test_selected_protein_group = "Protein1"
 
 
-    power = power_calculation_test(
+    power = power_calculation(
         differentially_expressed_proteins_df=power_test_data,
         significant_proteins_df=power_test_data,
         fc_threshold=test_fc_threshold,
