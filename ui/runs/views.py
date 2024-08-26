@@ -18,8 +18,8 @@ from django.http import (
 from django.shortcuts import render
 from django.urls import reverse
 
-from protzilla.run_helper import log_messages
 from protzilla.run import Run, get_available_run_names
+from protzilla.run_helper import log_messages
 from protzilla.stepfactory import StepFactory
 from protzilla.steps import Step
 from protzilla.utilities.utilities import (
@@ -125,7 +125,9 @@ def detail(request: HttpRequest, run_name: str):
         run.steps.current_step.display_output is not None
         and not run.current_step.display_output.is_empty()
     )
-    display_output_text = next(iter(run.current_step.display_output.display_output.values()), None)
+    display_output_text = next(
+        iter(run.current_step.display_output.display_output.values()), None
+    )
 
     return render(
         request,

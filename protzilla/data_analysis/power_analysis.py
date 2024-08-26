@@ -1,10 +1,10 @@
-import logging
+import math
 
 import numpy as np
 import pandas as pd
-import math
 from scipy import stats
-from statsmodels.stats.power import TTestIndPower
+
+from protzilla.utilities import default_intensity_column
 
 
 def variance_protein_group_calculation_max(
@@ -24,13 +24,15 @@ def variance_protein_group_calculation_max(
     :param intensity_name: The name of the column containing the protein group intensities.
     :return: The variance of the protein group.
     """
-
-    if intensity_name is None:
-        intensity_name = "Normalised iBAQ"
+    intensity_name = default_intensity_column(intensity_df, intensity_name)
     protein_group = intensity_df[intensity_df["Protein ID"] == protein_id]
 
-    group1_intensities = protein_group[protein_group["Group"] == group1][intensity_name].values
-    group2_intensities = protein_group[protein_group["Group"] == group2][intensity_name].values
+    group1_intensities = protein_group[protein_group["Group"] == group1][
+        intensity_name
+    ].values
+    group2_intensities = protein_group[protein_group["Group"] == group2][
+        intensity_name
+    ].values
 
     variance_group1 = np.var(group1_intensities, ddof=1)
     variance_group2 = np.var(group2_intensities, ddof=1)
@@ -39,18 +41,18 @@ def variance_protein_group_calculation_max(
 
     return max_variance
 
+
 def sample_size_calculation(
     differentially_expressed_proteins_df: pd.DataFrame,
     significant_proteins_df: pd.DataFrame,
-    significant_proteins_only: bool,
     fc_threshold: float,
     alpha: float,
     power: float,
     group1: str,
     group2: str,
     selected_protein_group: str,
-    intensity_name: str = None
-) -> float:
+    intensity_name: str = None,
+) -> dict:
     """
     Function to calculate the required sample size for a selected protein to achieve the required power .
 
@@ -67,7 +69,11 @@ def sample_size_calculation(
     :return: The required sample size.
     """
 
-    if selected_protein_group not in significant_proteins_df['Protein ID'].values and selected_protein_group not in differentially_expressed_proteins_df['Protein ID'].values:
+    if (
+        selected_protein_group not in significant_proteins_df["Protein ID"].values
+        and selected_protein_group
+        not in differentially_expressed_proteins_df["Protein ID"].values
+    ):
         raise ValueError("Please select a valid protein group.")
     protein_group = selected_protein_group
     z_alpha = stats.norm.ppf(1 - alpha / 2)
@@ -81,24 +87,25 @@ def sample_size_calculation(
         intensity_name=intensity_name,
     )
 
-    required_sample_size = (2 * ((z_alpha + z_beta)/ fc_threshold) ** 2 * variance_protein_group)
+    required_sample_size = (
+        2 * ((z_alpha + z_beta) / fc_threshold) ** 2 * variance_protein_group
+    )
     required_sample_size = math.ceil(required_sample_size)
     print(required_sample_size)
 
     return dict(required_sample_size=required_sample_size)
 
+
 def power_calculation(
     differentially_expressed_proteins_df: pd.DataFrame,
     significant_proteins_df: pd.DataFrame,
-    significant_proteins_only: bool,
     alpha: float,
     fc_threshold: float,
     group1: str,
     group2: str,
     selected_protein_group: str,
-    intensity_name: str = None
-) -> float:
-
+    intensity_name: str = None,
+) -> dict:
     """
     Function to calculate the power of the t-test for a selected protein group.
 
@@ -112,7 +119,11 @@ def power_calculation(
     :param intensity_name: The name of the column containing the protein group intensities.
     :return: The power of the test.
     """
-    if selected_protein_group not in significant_proteins_df['Protein ID'].values and selected_protein_group not in differentially_expressed_proteins_df['Protein ID'].values:
+    if (
+        selected_protein_group not in significant_proteins_df["Protein ID"].values
+        and selected_protein_group
+        not in differentially_expressed_proteins_df["Protein ID"].values
+    ):
         raise ValueError("Please select a valid protein group.")
     protein_group = selected_protein_group
     z_alpha = stats.norm.ppf(1 - alpha / 2)
@@ -135,14 +146,18 @@ def power_calculation(
     filtered_df["Measurement"] = filtered_df["Sample"].apply(
         lambda x: int(x[-2:]))
     """
-    filtered_protein_df = differentially_expressed_proteins_df[differentially_expressed_proteins_df["Protein ID"] == protein_group]
-    grouped_df= filtered_protein_df.groupby(['Group', 'Protein ID'])['Sample'].count()
-    sample_size_group1 =  grouped_df[group1][0]
-    sample_size_group2 =  grouped_df[group2][0]
-    sample_size = (2 * sample_size_group1 * sample_size_group2) / (sample_size_group1 + sample_size_group2) # Equation 2.3.1 from Cohen 1988, Statistical Power Analysis for the Behavioral Sciences
-    z_beta = fc_threshold * np.sqrt(sample_size /  (2 * variance_protein_group)) - z_alpha
+    filtered_protein_df = differentially_expressed_proteins_df[
+        differentially_expressed_proteins_df["Protein ID"] == protein_group
+    ]
+    grouped_df = filtered_protein_df.groupby(["Group", "Protein ID"])["Sample"].count()
+    sample_size_group1 = grouped_df[group1][0]
+    sample_size_group2 = grouped_df[group2][0]
+    sample_size = (2 * sample_size_group1 * sample_size_group2) / (
+        sample_size_group1 + sample_size_group2
+    )  # Equation 2.3.1 from Cohen 1988, Statistical Power Analysis for the Behavioral Sciences
+    z_beta = (
+        fc_threshold * np.sqrt(sample_size / (2 * variance_protein_group)) - z_alpha
+    )
     power = float(round(stats.norm.cdf(z_beta), 2))
 
     return dict(power=power)
-
-

@@ -349,7 +349,9 @@ def test_totalsum_normalisation(
     method_inputs = {"protein_df": normalisation_df}
     method_outputs = by_totalsum(**method_inputs)
 
-    fig = by_totalsum_plot(method_inputs, method_outputs, "Boxplot", "Sample", "log10")[0]
+    fig = by_totalsum_plot(method_inputs, method_outputs, "Boxplot", "Sample", "log10")[
+        0
+    ]
     if show_figures:
         fig.show()
 
@@ -376,9 +378,9 @@ def test_ref_protein_normalisation(
     }
     method_outputs = by_reference_protein(**method_input)
 
-    fig = by_reference_protein_plot(method_input, method_outputs, "Boxplot", "Sample", "log10")[
-        0
-    ]
+    fig = by_reference_protein_plot(
+        method_input, method_outputs, "Boxplot", "Sample", "log10"
+    )[0]
     if show_figures:
         fig.show()
 

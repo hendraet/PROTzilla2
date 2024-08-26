@@ -3,9 +3,7 @@ import pandas as pd
 from protzilla.data_preprocessing.plots import create_bar_plot, create_pie_plot
 
 
-def by_pep_value(
-    peptide_df: pd.DataFrame, threshold: float
-) -> dict:
+def by_pep_value(peptide_df: pd.DataFrame, threshold: float) -> dict:
     """
     This function filters out all peptides with a PEP value (assigned to all samples
     together for each peptide) below a certain threshold.

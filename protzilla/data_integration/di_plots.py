@@ -108,7 +108,6 @@ def GO_enrichment_bar_plot(
     elif value == "p-value":
         column = "P-value" if restring_input else "Adjusted P-value"
 
-
     if colors == "" or colors is None or len(colors) == 0:
         colors = PROTZILLA_DISCRETE_COLOR_SEQUENCE
     size_y = top_terms * 0.5 * len(gene_sets)

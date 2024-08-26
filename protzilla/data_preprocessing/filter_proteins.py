@@ -1,6 +1,7 @@
 import pandas as pd
 
 from protzilla.data_preprocessing.plots import create_bar_plot, create_pie_plot
+
 from ..utilities.transform_dfs import long_to_wide
 
 
@@ -30,9 +31,7 @@ def by_samples_missing(
     filtered_proteins_list = (
         transformed_df.drop(remaining_proteins_list, axis=1).columns.unique().tolist()
     )
-    filtered_df = protein_df[
-        (protein_df["Protein ID"].isin(remaining_proteins_list))
-    ]
+    filtered_df = protein_df[(protein_df["Protein ID"].isin(remaining_proteins_list))]
     filtered_peptide_df = None
     if peptide_df is not None:
         filtered_peptide_df = peptide_df[

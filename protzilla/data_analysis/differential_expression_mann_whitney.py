@@ -4,19 +4,22 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from protzilla.data_analysis.differential_expression_helper import _map_log_base, apply_multiple_testing_correction
+from protzilla.data_analysis.differential_expression_helper import (
+    _map_log_base,
+    apply_multiple_testing_correction,
+)
 from protzilla.utilities.transform_dfs import long_to_wide
 
 
 def mann_whitney_test_on_intensity_data(
-        intensity_df: pd.DataFrame,
-        metadata_df: pd.DataFrame,
-        grouping: str,
-        group1: str,
-        group2: str,
-        log_base: str = None,
-        alpha=0.05,
-        multiple_testing_correction_method: str = "",
+    intensity_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
+    grouping: str,
+    group1: str,
+    group2: str,
+    log_base: str = None,
+    alpha=0.05,
+    multiple_testing_correction_method: str = "",
 ) -> dict:
     wide_df = long_to_wide(intensity_df)
 
@@ -31,13 +34,24 @@ def mann_whitney_test_on_intensity_data(
         multiple_testing_correction_method=multiple_testing_correction_method,
         columns_name="Protein ID",
     )
-    differentially_expressed_proteins_df = pd.merge(intensity_df, outputs["differential_expressed_columns_df"], on="Protein ID", how="left")
+    differentially_expressed_proteins_df = pd.merge(
+        intensity_df,
+        outputs["differential_expressed_columns_df"],
+        on="Protein ID",
+        how="left",
+    )
     differentially_expressed_proteins_df = differentially_expressed_proteins_df.loc[
-        differentially_expressed_proteins_df["Protein ID"].isin(outputs["differential_expressed_columns_df"]["Protein ID"])
+        differentially_expressed_proteins_df["Protein ID"].isin(
+            outputs["differential_expressed_columns_df"]["Protein ID"]
+        )
     ]
-    significant_proteins_df = pd.merge(intensity_df, outputs["significant_columns_df"], on="Protein ID", how="left")
+    significant_proteins_df = pd.merge(
+        intensity_df, outputs["significant_columns_df"], on="Protein ID", how="left"
+    )
     significant_proteins_df = significant_proteins_df.loc[
-        significant_proteins_df["Protein ID"].isin(outputs["significant_columns_df"]["Protein ID"])
+        significant_proteins_df["Protein ID"].isin(
+            outputs["significant_columns_df"]["Protein ID"]
+        )
     ]
 
     return dict(
@@ -50,16 +64,17 @@ def mann_whitney_test_on_intensity_data(
         messages=outputs["messages"],
     )
 
+
 def mann_whitney_test_on_columns(
-        df: pd.DataFrame,
-        metadata_df: pd.DataFrame,
-        grouping: str,
-        group1: str,
-        group2: str,
-        log_base: str = None,
-        alpha=0.05,
-        multiple_testing_correction_method: str = "",
-        columns_name: str = "Protein ID",
+    df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
+    grouping: str,
+    group1: str,
+    group2: str,
+    log_base: str = None,
+    alpha=0.05,
+    multiple_testing_correction_method: str = "",
+    columns_name: str = "Protein ID",
 ) -> dict:
     """
     Perform Mann-Whitney U test on all columns of the data frame.
@@ -104,7 +119,9 @@ def mann_whitney_test_on_columns(
     for column in data_columns:
         group1_data = df_with_groups[df_with_groups[grouping] == group1][column]
         group2_data = df_with_groups[df_with_groups[grouping] == group2][column]
-        u_statistic, p_value = stats.mannwhitneyu(group1_data, group2_data, alternative="two-sided")
+        u_statistic, p_value = stats.mannwhitneyu(
+            group1_data, group2_data, alternative="two-sided"
+        )
 
         if not np.isnan(p_value):
             log2_fold_change = (
@@ -149,9 +166,13 @@ def mann_whitney_test_on_columns(
 
     significant_columns_df = combined_df[
         combined_df["corrected_p_value"] <= corrected_alpha
-        ]
+    ]
 
-    messages = [dict(level=logging.INFO, msg=f"Invalid columns: {invalid_columns}")] if invalid_columns else []
+    messages = (
+        [dict(level=logging.INFO, msg=f"Invalid columns: {invalid_columns}")]
+        if invalid_columns
+        else []
+    )
 
     return dict(
         differential_expressed_columns_df=combined_df,
