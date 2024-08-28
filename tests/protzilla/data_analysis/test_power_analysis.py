@@ -1,14 +1,20 @@
 import numpy as np
 import pandas as pd
 import pytest
+import math
+from scipy import stats
 
 from protzilla.data_analysis.power_analysis import (
-    check_sample_size_calculation_implemented,
-    check_sample_size_calculation_implemented_without_log,
-    check_sample_size_calculation_with_libfunc,
     power_calculation,
     sample_size_calculation,
+    variance_protein_group_calculation_max,
 )
+from protzilla.data_analysis.power_analysis_validation import (
+    check_sample_size_calculation_with_libfunc,
+    check_sample_size_calculation_implemented,
+    check_sample_size_calculation_implemented_without_log,
+)
+from test_differential_expression import diff_expr_test_data
 
 
 @pytest.fixture
@@ -54,34 +60,60 @@ def test_variance_protein_group_calculation(power_test_data):
     group1 = "Group1"
     group2 = "Group2"
 
-    variance = variance_protein_group_calculation(
+    variance = variance_protein_group_calculation_max(
         intensity_df, protein_id, group1, group2
     )
     print(variance)
     assert variance == 4.0
 
 
-def test_sample_size_calculation(power_test_data):
+def test_sample_size_calculation(power_test_data, diff_expr_test_data):
     test_alpha = 0.05
     test_power = 0.8
     test_fc_threshold = 1
     test_selected_protein_group = "Protein1"
+    test_individual_column = "None"
+    test_differentially_expressed_proteins_df, test_metadata_df = diff_expr_test_data
 
     required_sample_size = sample_size_calculation(
         differentially_expressed_proteins_df=power_test_data,
         significant_proteins_df=power_test_data,
+        metadata_df=test_metadata_df,
         fc_threshold=test_fc_threshold,
         power=test_power,
         alpha=test_alpha,
         group1="Group1",
         group2="Group2",
         selected_protein_group=test_selected_protein_group,
-        significant_proteins_only=False,
+        individual_column=test_individual_column,
         intensity_name=None,
     )
     print(required_sample_size)
     required_sample_size_int = next(iter(required_sample_size.values()), None)
     assert required_sample_size_int == 63
+
+def test_power_calculation(power_test_data, diff_expr_test_data):
+    test_alpha = 0.05
+    test_fc_threshold = 1
+    test_selected_protein_group = "Protein1"
+    test_individual_column = "None"
+    test_differentially_expressed_proteins_df, test_metadata_df = diff_expr_test_data
+
+    power = power_calculation(
+        differentially_expressed_proteins_df=power_test_data,
+        significant_proteins_df=power_test_data,
+        metadata_df=test_metadata_df,
+        fc_threshold=test_fc_threshold,
+        alpha=test_alpha,
+        group1="Group1",
+        group2="Group2",
+        selected_protein_group=test_selected_protein_group,
+        individual_column=test_individual_column,
+        intensity_name=None,
+    )
+    print(power)
+    power_int = next(iter(power.values()), None)
+    assert power_int == 0.09
 
 
 def test_check_sample_size_calculation_with_libfun(power_test_data):
@@ -156,23 +188,33 @@ def test_check_sample_size_calculation_implemented_without_log(power_test_data):
     required_sample_size_int = next(iter(required_sample_size.values()), None)
     assert required_sample_size_int == 63
 
+def test_replicate_paper_sample_size_calculation(power_test_data):
+    alpha = 0.001
+    power = 0.95
+    fc_threshold = math.log2(2)
+    biological_variance = 0.233
+    technical_variance = 2.298
+    number_of_replicates = 2
 
-def test_power_calculation(power_test_data):
-    test_alpha = 0.05
-    test_fc_threshold = 1
-    test_selected_protein_group = "Protein1"
+    z_alpha = round(stats.norm.ppf(1 - alpha / 2), 3)
+    z_beta = round(stats.norm.ppf(power), 3)
 
-    power = power_calculation(
-        differentially_expressed_proteins_df=power_test_data,
-        significant_proteins_df=power_test_data,
-        fc_threshold=test_fc_threshold,
-        alpha=test_alpha,
-        group1="Group1",
-        group2="Group2",
-        selected_protein_group=test_selected_protein_group,
-        significant_proteins_only=False,
-        intensity_name=None,
-    )
-    print(power)
-    power_int = next(iter(power.values()), None)
-    assert power_int == 0.09
+    required_sample_size = (
+        2
+        * ((z_alpha + z_beta) / fc_threshold) ** 2
+        * ((technical_variance / number_of_replicates) + biological_variance)
+    )  # Equation (1) in Cairns, David A., et al., 2008, Sample size determination in clinical proteomic profiling experiments using mass spectrometry for class comparison
+    required_sample_size = math.ceil(required_sample_size)
+    print(required_sample_size)
+
+    data = {
+        "Cairns": [44, 31, 62, 44, 14, 10, 19, 14, 5, 4, 7, 5],
+        "Calculated": [65, 52, 92, 74, 20, 16, 28, 23, 7, 6, 10, 8],
+    }
+    df = pd.DataFrame(data)
+    correlation = df["Cairns"].corr(df["Calculated"])
+    print(correlation)
+    correlationmatrix = df.corr()
+    print(correlationmatrix)
+
+    return dict(required_sample_size=required_sample_size)
