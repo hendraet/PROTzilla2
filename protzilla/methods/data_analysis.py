@@ -802,17 +802,16 @@ class PowerAnalysisPowerCalculation(DataAnalysisStep):
         "differentially_expressed_proteins_df",
         "selected_protein_group",
         "significant_proteins_df",
-        "significant_proteins_only",
         "fc_threshold",
         "alpha",
         "group1",
         "group2",
+        "individual_column",
+        "metadata_df",
     ]
     output_keys = ["power"]
 
     def method(self, inputs: dict) -> dict:
-        if "significant_proteins_only" in inputs:
-            del inputs["significant_proteins_only"]
         return power_calculation(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
@@ -825,7 +824,7 @@ class PowerAnalysisPowerCalculation(DataAnalysisStep):
         inputs["significant_proteins_df"] = steps.get_step_output(
             Step, "significant_proteins_df", inputs["input_dict"]
         )
-
+        inputs["metadata_df"] = steps.metadata_df
         inputs["alpha"] = step.inputs["alpha"]
         inputs["group1"] = step.inputs["group1"]
         inputs["group2"] = step.inputs["group2"]
@@ -845,20 +844,19 @@ class PowerAnalysisSampleSizeCalculation(DataAnalysisStep):
         "differentially_expressed_proteins_df",
         "selected_protein_group",
         "significant_proteins_df",
-        "significant_proteins_only",
         "fc_threshold",
         "alpha",
         "group1",
         "group2",
         "power",
+        "individual_column",
+        "metadata_df",
     ]
     output_keys = [
         "required_sample_size",
     ]
 
     def method(self, inputs: dict) -> dict:
-        if "significant_proteins_only" in inputs:
-            del inputs["significant_proteins_only"]
         return sample_size_calculation(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
@@ -871,7 +869,7 @@ class PowerAnalysisSampleSizeCalculation(DataAnalysisStep):
         inputs["significant_proteins_df"] = steps.get_step_output(
             Step, "significant_proteins_df", inputs["input_dict"]
         )
-
+        inputs["metadata_df"] = steps.metadata_df
         inputs["alpha"] = step.inputs["alpha"]
         inputs["group1"] = step.inputs["group1"]
         inputs["group2"] = step.inputs["group2"]

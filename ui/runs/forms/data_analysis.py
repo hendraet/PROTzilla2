@@ -1127,6 +1127,10 @@ class PowerAnalysisPowerCalculationForm(MethodForm):
         choices=[],
         label="Protein group to calculate power for",
     )
+    individual_column = CustomChoiceField(
+        choices=[],
+        label="Column name for individuals in metadata, if it exists (mean value will be calculated per individual)",
+    )
 
     def fill_form(self, run: Run) -> None:
         self.fields["input_dict"].choices = fill_helper.to_choices(
@@ -1139,7 +1143,11 @@ class PowerAnalysisPowerCalculationForm(MethodForm):
         input_dict_instance_id = self.data.get(
             "input_dict", self.fields["input_dict"].choices[0][0]
         )
-
+        self.fields["individual_column"].choices = [
+            ("None", "None")
+        ] + fill_helper.get_choices_for_metadata_all_columns(run)
+        individual_column = self.data.get("individual_column", "None")
+        self.fields["individual_column"].initial = individual_column
         self.fields["selected_protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(
                 Step, "differentially_expressed_proteins_df", input_dict_instance_id
@@ -1202,6 +1210,10 @@ class PowerAnalysisSampleSizeCalculationForm(MethodForm):
         choices=[],
         label="Protein group to calculate sample size for",
     )
+    individual_column = CustomChoiceField(
+        choices=[],
+        label="Column name for individuals in metadata, if it exists (mean value will be calculated per individual)",
+    )
 
     def fill_form(self, run: Run) -> None:
         self.fields["input_dict"].choices = fill_helper.to_choices(
@@ -1214,7 +1226,11 @@ class PowerAnalysisSampleSizeCalculationForm(MethodForm):
         input_dict_instance_id = self.data.get(
             "input_dict", self.fields["input_dict"].choices[0][0]
         )
-
+        self.fields["individual_column"].choices = [
+            ("None", "None")
+        ] + fill_helper.get_choices_for_metadata_all_columns(run)
+        individual_column = self.data.get("individual_column", "None")
+        self.fields["individual_column"].initial = individual_column
         self.fields["selected_protein_group"].choices = fill_helper.to_choices(
             run.steps.get_step_output(
                 Step, "differentially_expressed_proteins_df", input_dict_instance_id

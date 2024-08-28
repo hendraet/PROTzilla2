@@ -45,12 +45,14 @@ def variance_protein_group_calculation_max(
 def sample_size_calculation(
     differentially_expressed_proteins_df: pd.DataFrame,
     significant_proteins_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
     fc_threshold: float,
     alpha: float,
     power: float,
     group1: str,
     group2: str,
     selected_protein_group: str,
+    individual_column: str,
     intensity_name: str = None,
 ) -> dict:
     """
@@ -58,7 +60,6 @@ def sample_size_calculation(
 
     :param differentially_expressed_proteins_df: The dataframe containing the differentially expressed proteins from t-test output.
     :param significant_proteins_df: The dataframe containing the significant proteins from t-test output.
-    :param significant_proteins_only: A boolean to display only significant proteins for selection to the user.
     :param fc_threshold: The fold change threshold.
     :param alpha: The significance level. The value for alpha is taken from the t-test by default.
     :param power: The power of the test.
@@ -79,8 +80,32 @@ def sample_size_calculation(
     z_alpha = stats.norm.ppf(1 - alpha / 2)
     z_beta = stats.norm.ppf(power)
 
+    intensity_name = default_intensity_column(
+        differentially_expressed_proteins_df, intensity_name
+    )
+    filtered_protein_group_df = differentially_expressed_proteins_df[
+        differentially_expressed_proteins_df["Protein ID"] == protein_group
+    ]
+
+    if individual_column != "None" and individual_column in metadata_df.columns:
+        # filtered_protein_group_df["Individual"] = filtered_protein_group_df["Sample"].apply(lambda x: x[:4])
+        filtered_protein_group_merged_df = pd.merge(
+            filtered_protein_group_df,
+            metadata_df[["Sample", individual_column]],
+            on="Sample",
+        )
+        # filtered_protein_group_df.join(metadata_df[["Sample", individual_column]].set_index("Sample"), on="Sample")
+
+        filtered_protein_group_df = (
+            filtered_protein_group_merged_df.groupby(
+                ["Protein ID", "Group", individual_column]
+            )[intensity_name]
+            .mean()
+            .reset_index()
+        )
+
     variance_protein_group = variance_protein_group_calculation_max(
-        intensity_df=differentially_expressed_proteins_df,
+        intensity_df=filtered_protein_group_df,
         protein_id=protein_group,
         group1=group1,
         group2=group2,
@@ -89,7 +114,7 @@ def sample_size_calculation(
 
     required_sample_size = (
         2 * ((z_alpha + z_beta) / fc_threshold) ** 2 * variance_protein_group
-    )
+    )  # Equation (1) in Cairns, David A., et al., 2008, Sample size determination in clinical proteomic profiling experiments using mass spectrometry for class comparison
     required_sample_size = math.ceil(required_sample_size)
     print(required_sample_size)
 
@@ -99,11 +124,13 @@ def sample_size_calculation(
 def power_calculation(
     differentially_expressed_proteins_df: pd.DataFrame,
     significant_proteins_df: pd.DataFrame,
+    metadata_df: pd.DataFrame,
     alpha: float,
     fc_threshold: float,
     group1: str,
     group2: str,
     selected_protein_group: str,
+    individual_column: str,
     intensity_name: str = None,
 ) -> dict:
     """
@@ -128,8 +155,33 @@ def power_calculation(
     protein_group = selected_protein_group
     z_alpha = stats.norm.ppf(1 - alpha / 2)
 
+    intensity_name = default_intensity_column(
+        differentially_expressed_proteins_df, intensity_name
+    )
+    filtered_protein_group_df = differentially_expressed_proteins_df[
+        differentially_expressed_proteins_df["Protein ID"] == protein_group
+    ]
+    if individual_column != "None" and individual_column in metadata_df.columns:
+        filtered_protein_group_merged_df = pd.merge(
+            filtered_protein_group_df,
+            metadata_df[["Sample", individual_column]],
+            on="Sample",
+        )
+        # filtered_protein_group_df.join(metadata_df[["Sample", individual_column]].set_index("Sample"), on="Sample")
+
+        filtered_protein_group_df = (
+            filtered_protein_group_merged_df.groupby(
+                ["Protein ID", "Group", individual_column]
+            )[intensity_name]
+            .mean()
+            .reset_index()
+        )
+        filtered_protein_group_df = filtered_protein_group_df.rename(
+            columns={individual_column: "Sample"}
+        )
+
     variance_protein_group = variance_protein_group_calculation_max(
-        intensity_df=differentially_expressed_proteins_df,
+        intensity_df=filtered_protein_group_df,
         protein_id=protein_group,
         group1=group1,
         group2=group2,
@@ -146,12 +198,12 @@ def power_calculation(
     filtered_df["Measurement"] = filtered_df["Sample"].apply(
         lambda x: int(x[-2:]))
     """
-    filtered_protein_df = differentially_expressed_proteins_df[
-        differentially_expressed_proteins_df["Protein ID"] == protein_group
-    ]
-    grouped_df = filtered_protein_df.groupby(["Group", "Protein ID"])["Sample"].count()
-    sample_size_group1 = grouped_df[group1][0]
-    sample_size_group2 = grouped_df[group2][0]
+
+    group_count_df = filtered_protein_group_df.groupby(["Group", "Protein ID"])[
+        "Sample"
+    ].count()
+    sample_size_group1 = group_count_df[group1][0]
+    sample_size_group2 = group_count_df[group2][0]
     sample_size = (2 * sample_size_group1 * sample_size_group2) / (
         sample_size_group1 + sample_size_group2
     )  # Equation 2.3.1 from Cohen 1988, Statistical Power Analysis for the Behavioral Sciences
