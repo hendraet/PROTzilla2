@@ -49,7 +49,9 @@ class MaxQuantImportForm(MethodForm):
         label="Map to Uniprot IDs using Biomart (online)", required=False
     )
     aggregation_method = CustomChoiceField(
-        choices=AggregationMethods, label="Aggregation method", initial="Sum"
+        choices=AggregationMethods,
+        label="Aggregation method used to aggregate duplicate values for protein groups",
+        initial="Sum",
     )
 
 
@@ -59,7 +61,9 @@ class DiannImportForm(MethodForm):
         label="Map to Uniprot IDs using Biomart (online)", required=False
     )
     aggregation_method = CustomChoiceField(
-        choices=AggregationMethods, label="Aggregation method", initial="Sum"
+        choices=AggregationMethods,
+        label="Aggregation method used to aggregate duplicate values for protein groups",
+        initial="Sum",
     )
 
 
@@ -74,7 +78,9 @@ class MSFraggerImportForm(MethodForm):
         label="Map to Uniprot IDs using Biomart (online)", required=False
     )
     aggregation_method = CustomChoiceField(
-        choices=AggregationMethods, label="Aggregation method", initial="Sum"
+        choices=AggregationMethods,
+        label="Aggregation method used to aggregate duplicate values for protein groups",
+        initial="Sum",
     )
 
 
