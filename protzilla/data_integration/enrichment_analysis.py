@@ -4,7 +4,8 @@ import time
 import gseapy
 import numpy as np
 import pandas as pd
-from restring import restring
+# TODO: disabled temporarily bc. it's apparently quite hard to install tkinter, which restring depends on
+# from restring import restring
 
 from protzilla.constants.protzilla_logging import logger
 from protzilla.data_integration.database_query import biomart_database
