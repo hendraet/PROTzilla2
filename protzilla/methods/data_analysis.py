@@ -14,6 +14,8 @@ from protzilla.data_analysis.differential_expression_mann_whitney import (
     mann_whitney_test_on_intensity_data, mann_whitney_test_on_ptm_data)
 from protzilla.data_analysis.differential_expression_t_test import t_test
 from protzilla.data_analysis.dimension_reduction import t_sne, umap
+from protzilla.data_analysis.ptm_analysis import ptms_per_sample, \
+    ptms_per_protein_and_sample, select_peptides_of_protein
 from protzilla.data_analysis.model_evaluation import evaluate_classification_model
 from protzilla.data_analysis.plots import (
     clustergram_plot,
@@ -255,6 +257,37 @@ class DifferentialExpressionKruskalWallisOnIntensity(DataAnalysisStep):
         return kruskal_wallis_test_on_intensity_data(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
+        inputs["ptm_df"] = steps.get_step_output(Step, "ptm_df", inputs["ptm_df"])
+        inputs["metadata_df"] = steps.metadata_df
+        return inputs
+
+
+class DifferentialExpressionKruskalWallisOnIntensity(DataAnalysisStep):
+    display_name = "Kruskal-Wallis Test"
+    operation = "differential_expression"
+    method_description = ("A function to conduct a Kruskal-Wallis test between groups defined in the clinical data."
+                          "The p-values are corrected for multiple testing.")
+
+    input_keys = [
+        "protein_df",
+        "metadata_df",
+        "grouping",
+        "selected_groups",
+        "alpha",
+        "log_base",
+        "multiple_testing_correction_method",
+    ]
+    output_keys = [
+        "differentially_expressed_proteins_df",
+        "significant_proteins_df",
+        "corrected_p_values_df",
+        "corrected_alpha",
+    ]
+
+    def method(self, inputs: dict) -> dict:
+        return kruskal_wallis_test_on_intensity_data(**inputs)
+
+    def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["protein_df"] = steps.get_step_output(Step, "protein_df", inputs["protein_df"])
         inputs["metadata_df"] = steps.metadata_df
         inputs["log_base"] = steps.get_step_input(TransformationLog, "log_base")
@@ -294,13 +327,17 @@ class DifferentialExpressionKruskalWallisOnPTM(DataAnalysisStep):
 class PlotVolcano(PlotStep):
     display_name = "Volcano Plot"
     operation = "plot"
+    method_description = ("Plots the results of a differential expression analysis in a volcano plot. The x-axis shows "
+                          "the log2 fold change and the y-axis shows the -log10 of the corrected p-values. The user "
+                          "can define a fold change threshold and an alpha level to highlight significant items.")
     input_keys = [
         "p_values",
         "fc_threshold",
         "alpha",
         "group1",
         "group2",
-        "proteins_of_interest",
+        "item_type",
+        "items_of_interest",
         "log2_fc",
     ]
     output_keys = []
@@ -322,6 +359,11 @@ class PlotVolcano(PlotStep):
         inputs["log2_fc"] = steps.get_step_output(
             Step, "log2_fold_change_df", inputs["input_dict"]
         )
+
+        if step.operation == "differential_expression":
+            inputs["item_type"] = "Protein ID"
+        elif step.operation == "Peptide analysis":
+            inputs["item_type"] = "PTM"
 
         return inputs
 
