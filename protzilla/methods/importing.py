@@ -61,7 +61,7 @@ class MsFraggerImport(ImportingStep):
 
 
 class MetadataImport(ImportingStep):
-    display_name = "Metadata import"
+    display_name = "Metadata Import"
     operation = "metadataimport"
     method_description = "Import metadata"
 
@@ -77,7 +77,7 @@ class MetadataImport(ImportingStep):
 
 
 class MetadataImportMethodDiann(ImportingStep):
-    display_name = "Metadata import DIA-NN"
+    display_name = "DIA-NN Metadata Import"
     operation = "metadataimport"
     method_description = "Import metadata for run relationships of DIA-NN"
 
