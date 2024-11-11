@@ -120,6 +120,22 @@ def merge_differential_expression_and_significant_df(
     return differentially_expressed_proteins_df, significant_proteins_df
 
 
+def normalize_ptm_df(ptm_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Normalizes the PTM data frame by dividing the PTM values by the amount of peptides.
+    :param ptm_df: the PTM data frame
+    :return: the normalized PTM data frame
+    """
+    ptm_df_without_sample = ptm_df.drop("Sample", axis=1)
+
+    normalized_ptm_df = ptm_df_without_sample.div(ptm_df["Total Amount of Peptides"], axis=0)
+
+    normalized_ptm_df = normalized_ptm_df.drop("Total Amount of Peptides", axis=1)
+    normalized_ptm_df.insert(0, "Sample", ptm_df["Sample"])
+
+    return normalized_ptm_df
+
+
 INVALID_PROTEINGROUP_DATA_MSG = {
     "level": logging.WARNING,
     "msg": "Due to missing or identical values, the p-values for some protein groups could not be calculated. "

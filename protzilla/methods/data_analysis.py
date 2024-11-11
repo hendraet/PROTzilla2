@@ -23,7 +23,7 @@ from protzilla.data_analysis.plots import (
 )
 from protzilla.data_analysis.protein_graphs import peptides_to_isoform, variation_graph
 from protzilla.data_analysis.ptm_analysis import (
-    filter_peptides_of_protein,
+    select_peptides_of_protein,
     ptms_per_protein_and_sample,
     ptms_per_sample,
 )
@@ -776,7 +776,7 @@ class FLEXIQuantLF(PlotStep):
 
 
 class SelectPeptidesForProtein(DataAnalysisStep):
-    display_name = "Filter Peptides of Protein"
+    display_name = "Select Peptides of Protein"
     operation = "Peptide analysis"
     method_description = "Filter peptides for the a selected Protein of Interest from a peptide dataframe"
 
@@ -789,7 +789,7 @@ class SelectPeptidesForProtein(DataAnalysisStep):
     ]
 
     def method(self, inputs: dict) -> dict:
-        return filter_peptides_of_protein(**inputs)
+        return select_peptides_of_protein(**inputs)
 
     def insert_dataframes(self, steps: StepManager, inputs) -> dict:
         inputs["peptide_df"] = steps.get_step_output(
@@ -799,23 +799,17 @@ class SelectPeptidesForProtein(DataAnalysisStep):
         inputs["metadata_df"] = steps.metadata_df
 
         if inputs["auto_select"]:
-            significant_proteins = steps.get_step_output(
-                DataAnalysisStep, "significant_proteins_df", inputs["protein_list"]
-            )
-            index_of_most_significant_protein = significant_proteins[
-                "corrected_p_value"
-            ].idxmin()
-            most_significant_protein = significant_proteins.loc[
-                index_of_most_significant_protein
-            ]
+            significant_proteins = (
+                steps.get_step_output(DataAnalysisStep, "significant_proteins_df", inputs["protein_list"]))
+            index_of_most_significant_protein = significant_proteins['corrected_p_value'].idxmin()
+            most_significant_protein = significant_proteins.loc[index_of_most_significant_protein]
             inputs["protein_id"] = [most_significant_protein["Protein ID"]]
-            self.messages.append(
-                {
-                    "level": logging.INFO,
-                    "msg": f"Selected the most significant Protein: {most_significant_protein['Protein ID']}, "
-                    f"from {inputs['protein_list']}",
-                }
-            )
+            self.messages.append({
+                "level": logging.INFO,
+                "msg":
+                    f"Selected the most significant Protein: {most_significant_protein['Protein ID']}, "
+                    f"from {inputs['protein_list']}"
+            })
 
         return inputs
 

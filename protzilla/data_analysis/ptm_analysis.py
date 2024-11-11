@@ -8,7 +8,7 @@ import re
 from protzilla.utilities.transform_dfs import long_to_wide
 
 
-def filter_peptides_of_protein(
+def select_peptides_of_protein(
         peptide_df: pd.DataFrame, protein_ids: list[str],
 ) -> dict:
     """
@@ -60,6 +60,8 @@ def ptms_per_sample(peptide_df: pd.DataFrame) -> dict:
     modification_df = modification_df.groupby(["Sample"]).sum()
 
     modification_df = modification_df.groupby(modification_df.columns, axis=1).sum()
+
+    modification_df["Total Amount of Peptides"] = peptide_df[["Sample", "Modifications"]].groupby(["Sample"]).size()
 
     modification_df = modification_df.reset_index()
 

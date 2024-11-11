@@ -5,7 +5,7 @@ import pandas as pd
 from scipy import stats
 
 from protzilla.data_analysis.differential_expression_helper import _map_log_base, apply_multiple_testing_correction, \
-    merge_differential_expression_and_significant_df
+    merge_differential_expression_and_significant_df, normalize_ptm_df
 from protzilla.utilities.transform_dfs import long_to_wide
 
 
@@ -59,12 +59,14 @@ def mann_whitney_test_on_intensity_data(
         columns_name="Protein ID",
         p_value_calculation_method=p_value_calculation_method
     )
-    differentially_expressed_proteins_df, significant_proteins_df = (
-        merge_differential_expression_and_significant_df(
-            intensity_df=protein_df,
-            diff_exp_df=outputs["differential_expressed_columns_df"],
-            sig_df=outputs["significant_columns_df"]
-        ))
+    differentially_expressed_proteins_df = pd.merge(protein_df, outputs["differential_expressed_columns_df"], on="Protein ID", how="left")
+    differentially_expressed_proteins_df = differentially_expressed_proteins_df.loc[
+        differentially_expressed_proteins_df["Protein ID"].isin(outputs["differential_expressed_columns_df"]["Protein ID"])
+    ]
+    significant_proteins_df = pd.merge(protein_df, outputs["significant_columns_df"], on="Protein ID", how="left")
+    significant_proteins_df = significant_proteins_df.loc[
+        significant_proteins_df["Protein ID"].isin(outputs["significant_columns_df"]["Protein ID"])
+    ]
 
     return dict(
         differentially_expressed_proteins_df=differentially_expressed_proteins_df,
@@ -111,8 +113,11 @@ def mann_whitney_test_on_ptm_data(
         - a float corrected_alpha, containing the alpha value after application of multiple testing correction (depending on the selected multiple testing correction method corrected_alpha may be equal to alpha),
         - a list messages, containing messages for the user
     """
+
+    normalized_ptm_df = normalize_ptm_df(ptm_df)
+
     output = mann_whitney_test_on_columns(
-        df=ptm_df,
+        df=normalized_ptm_df,
         metadata_df=metadata_df,
         grouping=grouping,
         group1=group1,

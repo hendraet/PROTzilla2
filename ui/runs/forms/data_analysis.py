@@ -1,5 +1,7 @@
+import logging
 from enum import Enum, StrEnum
 
+from protzilla.methods.data_preprocessing import DataPreprocessingStep
 from protzilla.methods.data_analysis import (
     DataAnalysisStep,
     DifferentialExpressionLinearModel,
@@ -1145,9 +1147,7 @@ class SelectPeptidesForProteinForm(MethodForm):
 
             if chosen_list == "all proteins":
                 self.fields["protein_ids"].choices = fill_helper.to_choices(
-                    run.steps.get_step_output(
-                        Step, "protein_df"
-                    )["Protein ID"].unique()
+                    run.steps.get_step_output(Step, "protein_df")["Protein ID"].unique()
                 )
             else:
                 if self.data.get("sort_proteins"):
@@ -1179,9 +1179,7 @@ class PTMsPerSampleForm(MethodForm):
         )
         self.fields["peptide_df"].choices = fill_helper.to_choices(single_protein_peptides)
 
-        self.fields["peptide_df"].choices = fill_helper.get_choices(
-            run, "peptide_df"
-        )
+        self.fields["peptide_df"].choices = fill_helper.get_choices(run, "peptide_df")[::-1]
 
         single_protein_peptides = run.steps.get_instance_identifiers(
             SelectPeptidesForProtein, "peptide_df"
