@@ -20,7 +20,8 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.conf import settings
 
-from protzilla.run import Run, get_available_run_names
+from protzilla.run import Run, get_available_run_names 
+from protzilla.run_v2 import delete_run_folder
 from protzilla.run_helper import log_messages
 from protzilla.stepfactory import StepFactory
 from protzilla.steps import Step
@@ -231,6 +232,37 @@ def continue_(request: HttpRequest):
 
     return HttpResponseRedirect(reverse("runs:detail", args=(run_name,)))
 
+def delete_(request: HttpRequest):
+    """
+    Deletes an existing run. The user is redirected to the index page.
+
+    :param request: the request object
+    :type request: HttpRequest
+
+    
+    :return: the rendered details page of the run
+    :rtype: HttpResponse
+    """
+    run_name = request.POST["run_name"]
+    if run_name in active_runs:
+        del active_runs[run_name]
+    
+    try: 
+        delete_run_folder(run_name)
+    except Exception as e:
+        display_message(
+            {
+                "level": 40,
+                "msg": f"Couldn't delete the run '{run_name}' . Please check the permissions for this file or try running Protzilla as administrator.",
+                "trace": format_trace(traceback.format_exception(e)),
+            },
+            request,
+        )
+        traceback.print_exc()
+        return HttpResponseRedirect(reverse("runs:index"))
+
+    return HttpResponseRedirect(reverse("runs:index"))
+
 
 def next_(request, run_name):
     """
@@ -249,7 +281,7 @@ def next_(request, run_name):
     run = active_runs[run_name]
     name = request.POST.get("name", None)
     if name:
-        run.steps.name_current_step_instance(name)
+        run.steps.name_current_step_instance(name) 
     run.step_next()
 
     return HttpResponseRedirect(reverse("runs:detail", args=(run_name,)))
