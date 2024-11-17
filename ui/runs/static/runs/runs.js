@@ -33,21 +33,24 @@ $(document).ready(function () {
         $('#chosen-' + id).text(this.files[0].name);
     });
 
+    // control calculate button in footer
+    var calculateButton = $('#calculate_parameters_submit');
 
-    // control calculate buttons in footer
-    $('#calculate_parameters_submit_form_plot').click(function() {
-        $("#calc_form_plot").submit();
-    });
-    $('#calculate_parameters_submit_form').click(function() {
-        $("#calc_form_method").submit();
-    });
+    calculateButton.click(function() {
+        var form = $("#calculateForm")[0];
 
-    // calculate button spinner
-    $('.calculateSpinner').on('click', function() {        
-        // Change button content to show 'Calculating...' with a spinner
-        $(this).html(`
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            Calculating...
-        `);
+        if (form.checkValidity()) {
+            form.submit();
+
+            // show loading spinner on calculate button
+            calculateButton.html(`
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Calculating...
+            `);
+            calculateButton.prop('disabled', true);
+
+        } else {
+            form.reportValidity();
+        }
     });
 });
