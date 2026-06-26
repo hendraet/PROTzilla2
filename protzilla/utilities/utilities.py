@@ -11,8 +11,6 @@ from string import ascii_letters
 import pandas as pd
 import psutil
 
-from django.http import QueryDict
-
 # recipie from https://docs.python.org/3/library/itertools.html
 def unique_justseen(iterable, key=None):
     """List unique elements, preserving order. Remember only the element just seen."""
@@ -140,7 +138,7 @@ def get_file_name_from_upload_path(upload_path: str) -> str:
     return f"{base_name}.{file_extension}"
 
 
-def parameters_from_post(post: QueryDict) -> dict:
+def parameters_from_post(post: 'QueryDict') -> dict:
     """
     Removes token from dict and converts the remaining entries into suitable data formats.
     :param post: Django dict containing POST data.
